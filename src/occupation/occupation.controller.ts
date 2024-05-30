@@ -1,8 +1,10 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Put } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, Put, UseGuards } from '@nestjs/common';
 import { OccupationService } from './occupation.service';
 import { Occupation } from './entities/occupation.entity';
+import { ApiKeyGuard } from 'src/auth/api-key.middleware';
 
 @Controller('occupation')
+@UseGuards(ApiKeyGuard)
 export class OccupationController {
   constructor(private readonly occupationService: OccupationService) { }
 

@@ -1,8 +1,10 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Put } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, Put, UseGuards } from '@nestjs/common';
 import { CityService } from './city.service';
 import { City } from './entities/city.entity';
+import { ApiKeyGuard } from 'src/auth/api-key.middleware';
 
 @Controller('city')
+@UseGuards(ApiKeyGuard)
 export class CityController {
   constructor(private readonly cityService: CityService) {}
 

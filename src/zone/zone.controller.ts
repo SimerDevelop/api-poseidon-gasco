@@ -1,8 +1,10 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Put } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, Put, UseGuards } from '@nestjs/common';
 import { ZoneService } from './zone.service';
 import { Zone } from './entities/zone.entity';
+import { ApiKeyGuard } from 'src/auth/api-key.middleware';
 
 @Controller('zone')
+@UseGuards(ApiKeyGuard)
 export class ZoneController {
   constructor(private readonly zoneService: ZoneService) { }
 

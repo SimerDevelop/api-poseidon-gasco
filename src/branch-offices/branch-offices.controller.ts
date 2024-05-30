@@ -1,8 +1,10 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Put } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, Put, UseGuards } from '@nestjs/common';
 import { BranchOfficesService } from './branch-offices.service';
 import { BranchOffices } from './entities/branch-office.entity';
+import { ApiKeyGuard } from 'src/auth/api-key.middleware';
 
 @Controller('branch-offices')
+@UseGuards(ApiKeyGuard)
 export class BranchOfficesController {
     constructor(private branchOfficesService: BranchOfficesService) { }
 

@@ -3,16 +3,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Permissions } from 'src/permissions/entities/permission.entity';
 import { Roles } from 'src/roles/entities/roles.entity';
 import { Usuario } from 'src/usuarios/entities/usuario.entity';
-import { enviroment } from 'src/utils/environment.prod'
 import { Repository } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
 import * as bcrypt from 'bcryptjs';
-
-import * as fs from 'fs';
-import * as path from 'path';
-
-const tempDir = path.join(enviroment.srcDir, 'temp'); // Ruta absoluta a la carpeta temp dentro de src
-const pdfDir = path.join(enviroment.srcDir, 'pdf'); // Ruta absoluta a la carpeta temp dentro de src
 
 @Injectable()
 export class AuthService {
@@ -25,26 +18,6 @@ export class AuthService {
     @InjectRepository(Roles)
     private readonly rolesRepository: Repository<Roles>,
   ) { }
-
-  createTempFolder() {
-    // Verifica si la carpeta temp ya existe
-    if (!fs.existsSync(tempDir)) {
-      // Crea la carpeta temp si no existe
-      fs.mkdirSync(tempDir);
-      console.log('Carpeta "temp" creada correctamente en la ruta:', tempDir);
-    } else {
-      console.log('La carpeta "temp" ya existe en la ruta:', tempDir);
-    }
-
-    // Verifica si la carpeta pdf ya existe
-    if (!fs.existsSync(pdfDir)) {
-      // Crea la carpeta pdf si no existe
-      fs.mkdirSync(pdfDir);
-      console.log('Carpeta "pdf" creada correctamente en la ruta:', pdfDir);
-    } else {
-      console.log('La carpeta "pdf" ya existe en la ruta:', pdfDir);
-    }
-  }
 
   async createInitialPermissions() {
 

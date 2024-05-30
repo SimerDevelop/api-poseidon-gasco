@@ -12,7 +12,6 @@ async function bootstrap () {
   app.use('/temp', express.static(join(__dirname, '..', 'temp')))
 
   const authService = app.get(AuthService)
-  await authService.createTempFolder()
   await authService.createInitialPermissions()
   await authService.createInitialRoles()
   await authService.createInitialUser()

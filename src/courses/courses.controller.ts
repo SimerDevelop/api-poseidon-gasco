@@ -1,8 +1,10 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Put } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, Put, UseGuards } from '@nestjs/common';
 import { CoursesService } from './courses.service';
 import { Course } from './entities/course.entity';
+import { ApiKeyGuard } from 'src/auth/api-key.middleware';
 
 @Controller('courses')
+@UseGuards(ApiKeyGuard)
 export class CoursesController {
   constructor(private coursesService: CoursesService) { }
 

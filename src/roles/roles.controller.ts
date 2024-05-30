@@ -1,8 +1,10 @@
-import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, Put, UseGuards } from '@nestjs/common';
 import { RolesService } from './roles.service';
 import { Roles } from './entities/roles.entity';
+import { ApiKeyGuard } from 'src/auth/api-key.middleware';
 
 @Controller('roles')
+@UseGuards(ApiKeyGuard)
 export class RolesController {
     constructor(private rolesService: RolesService) { }
 

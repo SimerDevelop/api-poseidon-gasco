@@ -1,8 +1,10 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Put } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, Put, UseGuards } from '@nestjs/common';
 import { PropaneTruckService } from './propane-truck.service';
 import { PropaneTruck } from './entities/propane-truck.entity';
+import { ApiKeyGuard } from 'src/auth/api-key.middleware';
 
 @Controller('propane-truck')
+@UseGuards(ApiKeyGuard)
 export class PropaneTruckController {
   constructor(private readonly propaneTruckService: PropaneTruckService) { }
 

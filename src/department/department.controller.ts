@@ -1,8 +1,10 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Put } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, Put, UseGuards } from '@nestjs/common';
 import { DepartmentService } from './department.service';
 import { Department } from './entities/department.entity';
+import { ApiKeyGuard } from 'src/auth/api-key.middleware';
 
 @Controller('department')
+@UseGuards(ApiKeyGuard)
 export class DepartmentController {
   constructor(private readonly departmentService: DepartmentService) { }
 

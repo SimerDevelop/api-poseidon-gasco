@@ -1,8 +1,10 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Put } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, Put, UseGuards } from '@nestjs/common';
 import { FactorService } from './factor.service';
 import { Factor } from './entities/factor.entity';
+import { ApiKeyGuard } from 'src/auth/api-key.middleware';
 
 @Controller('factor')
+@UseGuards(ApiKeyGuard)
 export class FactorController {
   constructor(private readonly factorService: FactorService) {}
 

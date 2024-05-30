@@ -1,8 +1,10 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Put } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, Put, UseGuards } from '@nestjs/common';
 import { TabletService } from './tablet.service';
 import { Tablet } from './entities/tablet.entity';
+import { ApiKeyGuard } from 'src/auth/api-key.middleware';
 
 @Controller('tablet')
+@UseGuards(ApiKeyGuard)
 export class TabletController {
   constructor(private readonly tabletService: TabletService) {}
 

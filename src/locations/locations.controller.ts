@@ -1,8 +1,10 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Put } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, Put, UseGuards } from '@nestjs/common';
 import { LocationsService } from './locations.service';
 import { Location } from './entities/location.entity';
+import { ApiKeyGuard } from 'src/auth/api-key.middleware';
 
 @Controller('locations')
+@UseGuards(ApiKeyGuard)
 export class LocationsController {
   constructor(private readonly locationsService: LocationsService) {}
 

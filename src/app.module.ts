@@ -21,6 +21,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { GraphsModule } from './graphs/graphs.module';
 import { TabletModule } from './tablet/tablet.module';
 import { StationaryTankModule } from './stationary-tank/stationary-tank.module';
+import { OrdersModule } from './orders/orders.module';
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { StationaryTankModule } from './stationary-tank/stationary-tank.module';
     GraphsModule,
     TabletModule,
     StationaryTankModule,
+    OrdersModule,
   ],
   controllers: [AppController],
   providers: [AppService],

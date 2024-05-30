@@ -1,8 +1,10 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Put } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, Put, UseGuards } from '@nestjs/common';
 import { ClientsService } from './clients.service';
 import { Client } from './entities/client.entity';
+import { ApiKeyGuard } from 'src/auth/api-key.middleware';
 
 @Controller('client')
+@UseGuards(ApiKeyGuard)
 export class ClientsController {
   constructor(private readonly clientstService: ClientsService) { }
 

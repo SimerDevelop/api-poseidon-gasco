@@ -1,8 +1,10 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Put } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, Put, UseGuards } from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
 import { Notification } from './entities/notification.entity';
+import { ApiKeyGuard } from 'src/auth/api-key.middleware';
 
 @Controller('notifications')
+@UseGuards(ApiKeyGuard)
 export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 

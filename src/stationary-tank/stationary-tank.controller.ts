@@ -1,8 +1,10 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Put } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, Put, UseGuards } from '@nestjs/common';
 import { StationaryTankService } from './stationary-tank.service';
 import { StationaryTank } from './entities/stationary-tank.entity';
+import { ApiKeyGuard } from 'src/auth/api-key.middleware';
 
 @Controller('stationary-tank')
+@UseGuards(ApiKeyGuard)
 export class StationaryTankController {
   constructor(private readonly stationaryTankService: StationaryTankService) {}
 
