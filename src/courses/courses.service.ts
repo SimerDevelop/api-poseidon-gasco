@@ -7,6 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Usuario } from 'src/usuarios/entities/usuario.entity';
 import { Location } from 'src/locations/entities/location.entity';
 import { CommonService } from 'src/common-services/common.service';
+import { Order } from 'src/orders/entities/order.entity';
 
 @Injectable()
 export class CoursesService {
@@ -14,26 +15,27 @@ export class CoursesService {
   constructor(
     @InjectRepository(Course) private courseRepository: Repository<Course>,
     @InjectRepository(Usuario) private userRepository: Repository<Usuario>,
+    @InjectRepository(Order) private orderRepository: Repository<Order>,
     @InjectRepository(Location) private locationRepository: Repository<Location>,
     private commonService: CommonService
   ) { }
 
   async create(courseData: Course): Promise<any> {
     try {
-      const operator = await this.userRepository.findByIds(
-        courseData.operator
-      );
+      console.log(courseData);
 
-      const locations = await this.locationRepository.findByIds(
-        courseData.locations
-      );
+      const operator = await this.userRepository.findOne({
+        where: { idNumber: courseData.operator_id },
+      });
+
+      const orders = await this.orderRepository.findByIds(courseData.orders);
 
       const newCourse = this.courseRepository.create({
         ...courseData,
         id: uuidv4(), // Generar un nuevo UUID
         state: 'ACTIVO',
         operator: operator,
-        locations: locations
+        orders: orders
       });
 
       const createdCourse = await this.courseRepository.save(newCourse);
@@ -42,8 +44,7 @@ export class CoursesService {
         const status = {
           'status': 'EN CURSO'
         }
-
-        await this.commonService.updateUserStatus(operator[0].id, status)
+        await this.commonService.updateUserStatus(operator.id, status)
       }
 
       if (!createdCourse) {
@@ -61,7 +62,7 @@ export class CoursesService {
 
     } catch (error) {
       console.log(error);
-      
+
       return ResponseUtil.error(
         500,
         'Error al crear el Derrotero'
@@ -75,13 +76,14 @@ export class CoursesService {
         where: { state: 'ACTIVO' },
         relations: [
           'operator',
-
-          'locations',
-          'locations.branch_offices',
-          'locations.branch_offices.city',
-          'locations.branch_offices.client',
-          'locations.branch_offices.zone',
-          'locations.branch_offices.factor',
+          'orders',
+          'orders.branch_office',
+          'orders.branch_office.client',
+          'orders.branch_office.client.occupation',
+          'orders.branch_office.city',
+          'orders.branch_office.city.department',
+          'orders.branch_office.zone',
+          'orders.branch_office.factor'
         ],
       });
 
@@ -115,19 +117,19 @@ export class CoursesService {
         relations: [
           'operator',
 
-          'locations',
-          'locations.branch_offices',
-          'locations.branch_offices.city',
-          'locations.branch_offices.city.department',
-          'locations.branch_offices.client',
-          'locations.branch_offices.client.occupation',
-          'locations.branch_offices.zone',
-          'locations.branch_offices.factor',
+          'orders',
+          'orders.branch_office',
+          'orders.branch_office.client',
+          'orders.branch_office.client.occupation',
+          'orders.branch_office.city',
+          'orders.branch_office.city.department',
+          'orders.branch_office.zone',
+          'orders.branch_office.factor'
         ],
       });
 
       if (course) {
-        this.commonService.findCoursesByOperatorNameAndLastName(course.operator[0].firstName, course.operator[0].lastName);
+        this.commonService.findCoursesByOperatorNameAndLastName(course.operator.firstName, course.operator.lastName);
 
         return ResponseUtil.success(
           200,
@@ -150,44 +152,46 @@ export class CoursesService {
 
   async findCourseByOperatorId(operatorId: string) {
     try {
+      console.log(operatorId);
+      
       const courses = await this.courseRepository
         .createQueryBuilder('courses')
         .leftJoinAndSelect('courses.operator', 'operator')
-        .leftJoinAndSelect('courses.locations', 'locations')
-        .leftJoinAndSelect('locations.branch_offices', 'branch_offices')
-        .leftJoinAndSelect('branch_offices.city', 'city')
+        .leftJoinAndSelect('courses.orders', 'orders')
+        .leftJoinAndSelect('orders.branch_office', 'branch_office')
+        .leftJoinAndSelect('branch_office.city', 'city')
         .leftJoinAndSelect('city.department', 'department')
-        .leftJoinAndSelect('branch_offices.client', 'client')
+        .leftJoinAndSelect('branch_office.client', 'client')
         .leftJoinAndSelect('client.occupation', 'occupation')
-        .leftJoinAndSelect('branch_offices.factor', 'factor')
-        .leftJoinAndSelect('branch_offices.zone', 'zone')
-        .leftJoinAndSelect('branch_offices.stationary_tanks', 'stationary_tanks')
+        .leftJoinAndSelect('branch_office.factor', 'factor')
+        .leftJoinAndSelect('branch_office.zone', 'zone')
+        .leftJoinAndSelect('branch_office.stationary_tanks', 'stationary_tanks')
         .where('operator.id = :operatorId', { operatorId })
-        .getMany();
+        .getOne();
 
       console.log('=====================DERROTERO CONSULTADO=====================');
-      console.log(courses[0]);
+      console.log(courses);
       console.log('==============================================================');
 
-      if (courses.length < 1) {
+      if (!courses) {
         return ResponseUtil.error(
           400,
-          'No se han encontrado derroteros'
+          'No se han encontrado derrotero'
         );
       }
 
-      this.commonService.findCoursesByOperatorNameAndLastName(courses[0].operator[0].firstName, courses[0].operator[0].lastName);
+      this.commonService.findCoursesByOperatorNameAndLastName(courses.operator.firstName, courses.operator.lastName);
 
       return ResponseUtil.success(
         200,
-        'derroteros encontrados',
-        courses[0]
+        'derrotero encontrado',
+        courses
       );
 
     } catch (error) {
       return ResponseUtil.error(
         500,
-        'Error al obtener los derroteros'
+        'Error al obtener el derrotero'
       );
     }
   }
@@ -205,9 +209,9 @@ export class CoursesService {
         );
       }
 
-      const operator = await this.userRepository.findByIds(
-        courseData.operator
-      );
+      const operator = await this.userRepository.findOne({
+        where: { id: courseData.operator.toString() }
+      });
 
       const locations = await this.locationRepository.findByIds(
         courseData.locations
@@ -287,7 +291,7 @@ export class CoursesService {
         'status': 'DISPONIBLE'
       }
 
-      await this.commonService.updateUserStatus(existingCourse.operator[0].id, status);
+      await this.commonService.updateUserStatus(existingCourse.operator.id, status);
 
       return ResponseUtil.success(
         200,
@@ -295,7 +299,7 @@ export class CoursesService {
       );
     } catch (error) {
       console.log(error);
-      
+
       return ResponseUtil.error(
         500,
         'Error al eliminar el Derrotero'

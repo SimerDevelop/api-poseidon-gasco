@@ -4,49 +4,83 @@ import { Repository } from 'typeorm';
 import { Order } from './entities/order.entity';
 import { ResponseUtil } from 'src/utils/response.util';
 import { v4 as uuidv4 } from 'uuid';
+import { BranchOffices } from 'src/branch-offices/entities/branch-office.entity';
+import { CommonService } from 'src/common-services/common.service';
 
 @Injectable()
 export class OrdersService {
   constructor(
     @InjectRepository(Order) private orderRepository: Repository<Order>,
+    @InjectRepository(BranchOffices) private branchOfficeRepository: Repository<BranchOffices>,
+    private commonService: CommonService
   ) { }
 
   async create(orderData: Order): Promise<any> {
     try {
-
-      const lastOrder = await this.orderRepository.findOne({ order: { folio: 'DESC' } });
       let folio = 1;
-      if (lastOrder) {
-        folio = lastOrder.folio + 1;
-      }
+
+      console.log(orderData);
 
       if (orderData) {
-        const newOccupation = this.orderRepository.create({
-          ...orderData,
-          id: uuidv4(), // Generar un nuevo UUID
-          state: 'ACTIVO',
-          folio: folio,
+        const lastOrder = await this.orderRepository.find({
+          order: {
+            folio: 'DESC',
+          },
+          take: 1,
         });
 
-        const createdOccupation = await this.orderRepository.save(newOccupation);
-
-        if (createdOccupation) {
-          return ResponseUtil.success(
-            200,
-            'Pedido creado exitosamente',
-            createdOccupation
-          );
-        } else {
-          return ResponseUtil.error(
-            500,
-            'Ha ocurrido un problema al crear el Pedido'
-          );
+        if (lastOrder && lastOrder.length > 0) {
+          folio = lastOrder[0].folio + 1;
         }
+      }
+
+      const existingOrder = await this.orderRepository.findOne({
+        where: { branch_office_code: orderData.branch_office_code },
+      });
+
+      if (existingOrder) {
+        return ResponseUtil.error(
+          400,
+          'Ya existe un Pedido con el mismo código de sucursal'
+        );
+      }
+
+      const branch_office = await this.branchOfficeRepository.findOne({
+        where: { branch_office_code: orderData.branch_office_code },
+      });
+
+      const newOrder = this.orderRepository.create({
+        ...orderData,
+        id: uuidv4(), // Generar un nuevo UUID
+        state: 'ACTIVO',
+        folio: folio,
+        branch_office: branch_office,
+      });
+
+      const createdOrder = await this.orderRepository.save(newOrder);
+
+      if (createdOrder) {
+        const status = 'PENDIENTE';
+        await this.commonService.updateBranchOfficeStatus(branch_office.id, { status });
+      }
+
+      if (createdOrder) {
+        return ResponseUtil.success(
+          200,
+          'Pedido creado exitosamente',
+          createdOrder
+        );
+      } else {
+        return ResponseUtil.error(
+          500,
+          'Ha ocurrido un problema al crear el Pedido'
+        );
       }
     } catch (error) {
       return ResponseUtil.error(
         500,
-        'Error al crear el Pedido'
+        'Error al crear el Pedido',
+        error.message
       );
     }
   }
@@ -55,6 +89,7 @@ export class OrdersService {
     try {
       const occupations = await this.orderRepository.find({
         where: { state: 'ACTIVO' },
+        relations: ['branch_office'],
       });
 
       if (occupations.length < 1) {
@@ -81,6 +116,7 @@ export class OrdersService {
     try {
       const occupation = await this.orderRepository.findOne({
         where: { id },
+        relations: ['branch_office'],
       });
 
       if (occupation) {
@@ -172,4 +208,5 @@ export class OrdersService {
       );
     }
   }
+  
 }

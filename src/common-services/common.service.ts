@@ -96,12 +96,12 @@ export class CommonService {
         }
     }
 
-    async findCoursesByOperatorNameAndLastName(firstName: string, lastName: string) {        
+    async findCoursesByOperatorNameAndLastName(firstName: string, lastName: string) {
         try {
             const courses = await this.courseRepository
                 .createQueryBuilder('courses')
-                .innerJoinAndSelect('courses.locations', 'locations') // carga la relación con locations
-                .innerJoinAndSelect('locations.branch_offices', 'branch_offices') // carga la relación con branch_offices
+                .innerJoinAndSelect('courses.orders', 'orders') // carga la relación con orders
+                .innerJoinAndSelect('orders.branch_office', 'branch_office') // carga la relación con branch_offices
                 .innerJoinAndSelect('courses.operator', 'operator')
                 .where('operator.firstName = :firstName AND operator.lastName = :lastName', { firstName, lastName }) // busca por firstName y lastName
                 .getMany();
@@ -116,39 +116,39 @@ export class CommonService {
             for (let course of courses) {
                 let allBranchOfficesLoaded = await this.areAllBranchOfficesLoaded(course);
 
-                // Si todas las branch_offices tienen el estado 'CARGADO', actualiza su estado a 'EFECTIVO' y elimina el curso
-                if (allBranchOfficesLoaded) {
-                    for (let location of course.locations) {
-                        for (let branch_office of location.branch_offices) {
-                            branch_office.status = 'EFECTIVO';
-                            await this.branchOfficeRepository.save(branch_office); // asumiendo que tienes un repositorio para branch_offices
-                        }
-                    }
-                    
-                    await this.courseRepository.delete(course.id);
+                // // Si todas las branch_offices tienen el estado 'CARGADO', actualiza su estado a 'EFECTIVO' y elimina el curso
+                // if (allBranchOfficesLoaded) {
+                //     for (let location of course.locations) {
+                //         for (let branch_office of location.branch_offices) {
+                //             branch_office.status = 'EFECTIVO';
+                //             await this.branchOfficeRepository.save(branch_office); // asumiendo que tienes un repositorio para branch_offices
+                //         }
+                //     }
 
-                    const statusUser = {
-                        "status": "DISPONIBLE"
-                    }
+                //     await this.courseRepository.delete(course.id);
 
-                    await this.updateUserStatus(course.operator[0].idNumber, statusUser);
+                //     const statusUser = {
+                //         "status": "DISPONIBLE"
+                //     }
 
-                    const notificationData = this.notificationRepository.create({
-                        status: "NO LEIDO",
-                        message: `Se ha completado el derrotero con el código ${course.id} creado en ${course.create} asignado a ${firstName} ${lastName}`,
-                        title: `Derrotero completado`,
-                        type: "DERROTERO",
-                        intercourse: course.operator[0].id
-                    })
+                //     await this.updateUserStatus(course.operator[0].idNumber, statusUser);
 
-                    this.notificationsService.create(notificationData);
+                //     const notificationData = this.notificationRepository.create({
+                //         status: "NO LEIDO",
+                //         message: `Se ha completado el derrotero con el código ${course.id} creado en ${course.create} asignado a ${firstName} ${lastName}`,
+                //         title: `Derrotero completado`,
+                //         type: "DERROTERO",
+                //         intercourse: course.operator[0].id
+                //     })
+
+                //     this.notificationsService.create(notificationData);
 
 
-                    console.log('===============================DERROTERO COMPLETADO==============================');
-                    console.log(firstName, lastName, 'ID: ', course.operator[0].idNumber, 'ha completado el Derrotero:', course.id);
-                    console.log('Fecha de asignación: ', course.create)
-                    console.log('=================================================================================');
-                }
+                //     console.log('===============================DERROTERO COMPLETADO==============================');
+                //     console.log(firstName, lastName, 'ID: ', course.operator[0].idNumber, 'ha completado el Derrotero:', course.id);
+                //     console.log('Fecha de asignación: ', course.create)
+                //     console.log('=================================================================================');
+                // }
             }
 
             return ResponseUtil.success(
@@ -166,14 +166,13 @@ export class CommonService {
     }
 
     async areAllBranchOfficesLoaded(course) {
-        for (let location of course.locations) {
-            for (let branch_office of location.branch_offices) {
-                if (branch_office.status !== 'CARGADO') {
-                    // Si alguna branch_office no tiene el estado 'CARGADO', retorna false
-                    return false;
-                }
+        for (let order of course.orders) {
+            if (order.branch_office.status !== 'CARGADO') {
+                // Si alguna branch_office no tiene el estado 'CARGADO', retorna false
+                return false;
             }
         }
+
         // Si todas las branch_offices tienen el estado 'CARGADO', retorna true
         return true;
     }

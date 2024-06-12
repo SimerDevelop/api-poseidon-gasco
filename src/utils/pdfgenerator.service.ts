@@ -46,7 +46,7 @@ export class PDFGenerator {
         doc.fontSize(5).text(`${bill.branch_office_address}`);
 
         doc.moveUp(11).fontSize(5).text(`Fecha:`, { align: 'right' });
-        doc.fontSize(5).text(`${bill.charge.fechaInicial}`, { align: 'right' });
+        doc.fontSize(5).text(`${bill.charge.fechaInicial} | ${bill.charge.horaInicial}`, { align: 'right' });
 
         // Datos del cliente
         doc.moveDown().fontSize(5).text(`Cliente:`, { align: 'right' });

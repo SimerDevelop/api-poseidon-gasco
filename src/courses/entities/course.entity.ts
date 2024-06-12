@@ -1,19 +1,21 @@
-import { Location } from 'src/locations/entities/location.entity';
+import { Order } from 'src/orders/entities/order.entity';
 import { Usuario } from 'src/usuarios/entities/usuario.entity';
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, ManyToMany, JoinTable } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, ManyToMany, JoinTable, ManyToOne, OneToMany } from 'typeorm';
 
 @Entity('courses')
 export class Course {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
-    @ManyToMany(() => Usuario, { cascade: true }) 
-    @JoinTable()
-    operator: Usuario[];
+    @ManyToOne(() => Usuario, { cascade: true })
+    operator: Usuario;
 
-    @ManyToMany(() => Location, { cascade: true }) 
+    @ManyToMany(() => Order, { cascade: true }) 
     @JoinTable()
-    locations: Location[];
+    orders: Order[];
+
+    @Column()
+    operator_id: string;
 
     @Column()
     state: string;
