@@ -53,6 +53,7 @@ export class OrdersService {
         ...orderData,
         id: uuidv4(), // Generar un nuevo UUID
         state: 'ACTIVO',
+        status: 'DISPONIBLE',
         folio: folio,
         branch_office: branch_office,
       });
@@ -208,5 +209,34 @@ export class OrdersService {
       );
     }
   }
-  
+
+  ////////////////////////////////////////////////////////////////////////////////////////
+
+  async getAvailableOrders() {
+    try {
+      const occupations = await this.orderRepository.find({
+        where: { status: 'DISPONIBLE' },
+        relations: ['branch_office'],
+      });
+
+      if (occupations.length < 1) {
+        return ResponseUtil.error(
+          400,
+          'No se han encontrado Pedidos'
+        );
+      }
+
+      return ResponseUtil.success(
+        200,
+        'Pedidos encontrados',
+        occupations
+      );
+    } catch (error) {
+      return ResponseUtil.error(
+        500,
+        'Error al obtener los Pedidos'
+      );
+    }
+  }
+
 }

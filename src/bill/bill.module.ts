@@ -17,10 +17,24 @@ import { StationaryTankService } from 'src/stationary-tank/stationary-tank.servi
 import { CommonModule } from 'src/common-services/common.module';
 import { CommonService } from 'src/common-services/common.service';
 import { Course } from 'src/courses/entities/course.entity';
+import { PropaneTruck } from 'src/propane-truck/entities/propane-truck.entity';
+import { Order } from 'src/orders/entities/order.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Bill, BranchOffices, Usuario, Client, Notification, City, Zone, Factor, StationaryTank, Course]),
+    TypeOrmModule.forFeature([
+      Bill,
+      BranchOffices,
+      Usuario, Client,
+      Notification,
+      City,
+      Zone,
+      Factor,
+      StationaryTank,
+      Course,
+      PropaneTruck,
+      Order
+    ]),
     CommonModule,
   ],
   controllers: [BillController],

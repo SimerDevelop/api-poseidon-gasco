@@ -14,11 +14,6 @@ export class UsuariosService {
     @InjectRepository(Usuario) private usuariosRepository: Repository<Usuario>,
   ) { }
 
-  /**
-   * Crea un nuevo usuario en la base de datos.
-   * @param userData - Datos del usuario a crear.
-   * @returns Información sobre el resultado de la operación.
-   */
   async createUser(userData: Usuario): Promise<any> {
     try {
       if (userData) {
@@ -66,12 +61,6 @@ export class UsuariosService {
     }
   }
 
-  /**
-   * Inicia sesión de un usuario en la base de datos.
-   * @param credentials - Correo electrónico del usuario.
-   * @param password - Contraseña del usuario.
-   * @returns Información sobre el resultado de la operación.
-   */
   async loginUser(credentials: string, password: string): Promise<any> {
     try {
       const user = await this.usuariosRepository
@@ -113,10 +102,6 @@ export class UsuariosService {
     }
   }
 
-  /**
-   * Obtiene una lista de todos los usuarios en la base de datos.
-   * @returns Información sobre el resultado de la operación.
-   */
   async findAll(): Promise<any> {
     try {
       const users = await this.usuariosRepository
@@ -145,10 +130,6 @@ export class UsuariosService {
     }
   }
 
-  /**
-  * Obtiene una lista de todos los operarios en la base de datos.
-  * @returns Información sobre el resultado de la operación.
-  */
   async findAvaiableOperators(): Promise<any> {
     try {
       const users = await this.usuariosRepository
@@ -179,10 +160,6 @@ export class UsuariosService {
     }
   }
 
-  /**
-  * Obtiene una lista de todos los operarios en la base de datos.
-  * @returns Información sobre el resultado de la operación.
-  */
   async findAllOperators(): Promise<any> {
     try {
       const users = await this.usuariosRepository
@@ -213,11 +190,6 @@ export class UsuariosService {
     }
   }
 
-  /**
-  * Elimina un usuario por su ID.
-  * @param id - ID del usuario a eliminar.
-  * @returns Información sobre el resultado de la operación.
-  */
   async deleteUserById(id: string): Promise<any> {
     try {
       const existingTablet = await this.usuariosRepository.findOne({
@@ -284,11 +256,6 @@ export class UsuariosService {
     }
   }
 
-  /**
-   * Obtiene un usuario por su ID.
-   * @param id - ID del usuario a buscar.
-   * @returns Información sobre el resultado de la operación.
-   */
   async findUserById(id: string): Promise<any> {
     try {
       const user = await this.usuariosRepository
@@ -318,12 +285,6 @@ export class UsuariosService {
     }
   }
 
-  /**
-  * Actualiza los datos de un usuario por su ID.
-  * @param id - ID del usuario a actualizar.
-  * @param userData - Nuevos datos del usuario.
-  * @returns Información sobre el resultado de la operación.
-  */
   async updateUserById(id: string, userData: Usuario): Promise<any> {
     try {
       const existingUser = await this.usuariosRepository

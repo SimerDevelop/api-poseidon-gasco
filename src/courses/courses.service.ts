@@ -8,6 +8,7 @@ import { Usuario } from 'src/usuarios/entities/usuario.entity';
 import { Location } from 'src/locations/entities/location.entity';
 import { CommonService } from 'src/common-services/common.service';
 import { Order } from 'src/orders/entities/order.entity';
+import { PropaneTruck } from 'src/propane-truck/entities/propane-truck.entity';
 
 @Injectable()
 export class CoursesService {
@@ -17,15 +18,18 @@ export class CoursesService {
     @InjectRepository(Usuario) private userRepository: Repository<Usuario>,
     @InjectRepository(Order) private orderRepository: Repository<Order>,
     @InjectRepository(Location) private locationRepository: Repository<Location>,
+    @InjectRepository(PropaneTruck) private propaneTruckRepository: Repository<PropaneTruck>,
     private commonService: CommonService
   ) { }
 
   async create(courseData: Course): Promise<any> {
     try {
-      console.log(courseData);
-
       const operator = await this.userRepository.findOne({
         where: { idNumber: courseData.operator_id },
+      });
+
+      const propane_truck = await this.propaneTruckRepository.findOne({
+        where: { plate: courseData.propane_truck.plate },
       });
 
       const orders = await this.orderRepository.findByIds(courseData.orders);
@@ -35,15 +39,24 @@ export class CoursesService {
         id: uuidv4(), // Generar un nuevo UUID
         state: 'ACTIVO',
         operator: operator,
-        orders: orders
+        orders: orders,
+        propane_truck: propane_truck
       });
 
       const createdCourse = await this.courseRepository.save(newCourse);
+
+      console.log('==============Derrotero Creado:', createdCourse);
 
       if (createdCourse) {
         const status = {
           'status': 'EN CURSO'
         }
+
+        for (let i = 0; i < orders.length; i++) {
+          await this.commonService.updateOrder(orders[i].id, status);
+        }
+
+        await this.commonService.updatePropaneTruckStatus(propane_truck.id, status)
         await this.commonService.updateUserStatus(operator.id, status)
       }
 
@@ -76,6 +89,7 @@ export class CoursesService {
         where: { state: 'ACTIVO' },
         relations: [
           'operator',
+          'propane_truck',
           'orders',
           'orders.branch_office',
           'orders.branch_office.client',
@@ -116,7 +130,7 @@ export class CoursesService {
         where: { id },
         relations: [
           'operator',
-
+          'propane_truck',
           'orders',
           'orders.branch_office',
           'orders.branch_office.client',
@@ -153,11 +167,12 @@ export class CoursesService {
   async findCourseByOperatorId(operatorId: string) {
     try {
       console.log(operatorId);
-      
+
       const courses = await this.courseRepository
         .createQueryBuilder('courses')
         .leftJoinAndSelect('courses.operator', 'operator')
         .leftJoinAndSelect('courses.orders', 'orders')
+        .leftJoinAndSelect('courses.propane_truck', 'propane_truck')
         .leftJoinAndSelect('orders.branch_office', 'branch_office')
         .leftJoinAndSelect('branch_office.city', 'city')
         .leftJoinAndSelect('city.department', 'department')
@@ -250,6 +265,7 @@ export class CoursesService {
       }
 
       existingCourse.state = 'INACTIVO';
+
       const updatedCity = await this.courseRepository.save(existingCourse);
 
       if (updatedCity) {
@@ -276,7 +292,7 @@ export class CoursesService {
     try {
       const existingCourse = await this.courseRepository.findOne({
         where: { id },
-        relations: ['operator']
+        relations: ['operator', 'propane_truck', 'orders']
       });
 
       if (!existingCourse) {
@@ -291,7 +307,11 @@ export class CoursesService {
         'status': 'DISPONIBLE'
       }
 
+      for (let i = 0; i < existingCourse.orders.length; i++) {
+        await this.commonService.updateOrder(existingCourse.orders[i].id, status);
+      }
       await this.commonService.updateUserStatus(existingCourse.operator.id, status);
+      await this.commonService.updatePropaneTruckStatus(existingCourse.propane_truck.id, status);
 
       return ResponseUtil.success(
         200,

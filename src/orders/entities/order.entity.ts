@@ -13,6 +13,9 @@ export class Order {
     state: string;
 
     @Column()
+    status: string;
+
+    @Column()
     payment_type: string;
 
     @Column()

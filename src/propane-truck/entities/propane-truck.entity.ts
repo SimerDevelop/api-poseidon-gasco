@@ -11,6 +11,9 @@ export class PropaneTruck {
     state: string;
 
     @Column()
+    status: string;
+
+    @Column()
     plate: string;
 
     @Column()

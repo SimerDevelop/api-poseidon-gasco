@@ -31,14 +31,18 @@ export class PropaneTruckService {
         propaneTruckData.operator
       );
 
+      console.log(operator);
+
       if (propaneTruckData) {
         const newPropaneTruck = this.propaneTruckRepository.create({
           ...propaneTruckData,
           id: uuidv4(), // Generar un nuevo UUID
           state: 'ACTIVO',
+          status: 'DISPONIBLE',
           operator: operator,
           plate: propaneTruckData.plate.toUpperCase()
         });
+
         const createdPropaneTruck = await this.propaneTruckRepository.save(newPropaneTruck);
 
         if (createdPropaneTruck) {
@@ -129,9 +133,14 @@ export class PropaneTruckService {
         throw new NotFoundException('Auto Tanque no encontrado');
       }
 
+      const operator = await this.usuariosRepository.findByIds(
+        propaneTruckData.operator
+      );
+
       const updatedPropaneTank = await this.propaneTruckRepository.save({
         ...existingPropaneTank,
         ...propaneTruckData,
+        operator: operator,
         plate: propaneTruckData.plate.toUpperCase()
       });
 
@@ -186,7 +195,7 @@ export class PropaneTruckService {
       );
     }
   }
-  
+
   /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   async getByOperatorId(operatorId: number): Promise<any> {
@@ -194,7 +203,7 @@ export class PropaneTruckService {
       const trucks = await this.propaneTruckRepository
         .createQueryBuilder('propane_truck')
         .innerJoin('propane_truck.operator', 'operator')
-        .where('operator.id = :operatorId', { operatorId })
+        .where('operator.id = :operatorId OR operator.idNumber = :operatorId', { operatorId })
         .getMany();
 
       if (trucks.length < 1) {
@@ -218,4 +227,43 @@ export class PropaneTruckService {
       );
     }
   }
+
+  async updateStatus(id, propaneTruckData) {
+    try {
+      console.log('propaneTruckData::', propaneTruckData);
+      const existingPropaneTank = await this.propaneTruckRepository.findOne({
+        where: { id },
+      });
+
+
+
+      if (!existingPropaneTank) {
+        throw new NotFoundException('Auto Tanque no encontrado');
+      }
+
+      const updatedPropaneTank = await this.propaneTruckRepository.save({
+        ...existingPropaneTank,
+        ...propaneTruckData,
+      });
+
+      return ResponseUtil.success(
+        200,
+        'Auto Tanque actualizado exitosamente',
+        updatedPropaneTank
+      );
+
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        return ResponseUtil.error(
+          404,
+          'Auto Tanque no encontrado'
+        );
+      }
+      return ResponseUtil.error(
+        500,
+        'Error al actualizar el Auto Tanque'
+      );
+    }
+  }
+
 }

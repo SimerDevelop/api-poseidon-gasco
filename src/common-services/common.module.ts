@@ -7,10 +7,12 @@ import { Course } from 'src/courses/entities/course.entity';
 import { Usuario } from 'src/usuarios/entities/usuario.entity';
 import { NotificationsModule } from 'src/notifications/notifications.module';
 import { Notification } from 'src/notifications/entities/notification.entity';
+import { PropaneTruck } from 'src/propane-truck/entities/propane-truck.entity';
+import { Order } from 'src/orders/entities/order.entity';
 
 @Module({
     imports: [
-        TypeOrmModule.forFeature([BranchOffices, Course, Usuario, Notification]),
+        TypeOrmModule.forFeature([BranchOffices, Course, Usuario, Notification, PropaneTruck, Order]),
         NotificationsModule
     ],
     providers: [CommonService],

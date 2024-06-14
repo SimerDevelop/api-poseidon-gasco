@@ -7,18 +7,30 @@ import { Course } from 'src/courses/entities/course.entity';
 import { Usuario } from 'src/usuarios/entities/usuario.entity';
 import { Notification } from 'src/notifications/entities/notification.entity';
 import { NotificationsService } from 'src/notifications/notifications.service';
+import { PropaneTruck } from 'src/propane-truck/entities/propane-truck.entity';
+import { Order } from 'src/orders/entities/order.entity';
 
 @Injectable()
 export class CommonService {
     constructor(
         @InjectRepository(BranchOffices)
         private branchOfficeRepository: Repository<BranchOffices>,
+
         @InjectRepository(Course)
         private courseRepository: Repository<Course>,
+
         @InjectRepository(Usuario)
         private userRepository: Repository<Usuario>,
+
+        @InjectRepository(PropaneTruck)
+        private propaneTruckRepository: Repository<PropaneTruck>,
+
+        @InjectRepository(Order)
+        private orderRepository: Repository<Order>,
+
         @InjectRepository(Notification)
         private notificationRepository: Repository<Notification>,
+
         private notificationsService: NotificationsService
     ) { }
 
@@ -59,7 +71,6 @@ export class CommonService {
     }
 
     async updateUserStatus(id, userData) {
-        console.log('userData', userData);
         try {
             const existingUserData = await this.userRepository.findOne({
                 where: [
@@ -75,7 +86,7 @@ export class CommonService {
                 );
             }
 
-            const updatedBranchOffice = await this.userRepository.save({
+            const updatedUser = await this.userRepository.save({
                 ...existingUserData,
                 ...userData,
             });
@@ -83,7 +94,7 @@ export class CommonService {
             return ResponseUtil.success(
                 200,
                 'Usuario actualizado exitosamente',
-                updatedBranchOffice
+                updatedUser
             );
 
         } catch (error) {
@@ -92,6 +103,80 @@ export class CommonService {
             return ResponseUtil.error(
                 500,
                 'Error al actualizar el usuario'
+            );
+        }
+    }
+
+    async updatePropaneTruckStatus(id, propaneTruckData) {
+        console.log('propaneTruckData', propaneTruckData);
+        try {
+            const existingPropaneTruckData = await this.propaneTruckRepository.findOne({
+                where: [
+                    { id: id },
+                ]
+            });
+
+            if (!existingPropaneTruckData) {
+                return ResponseUtil.error(
+                    404,
+                    'Auto tanque no encontrado'
+                );
+            }
+
+            const updatedPropaneTruck = await this.propaneTruckRepository.save({
+                ...existingPropaneTruckData,
+                ...propaneTruckData,
+            });
+
+            return ResponseUtil.success(
+                200,
+                'Auto tanque actualizado exitosamente',
+                updatedPropaneTruck
+            );
+
+        } catch (error) {
+            console.log(error);
+
+            return ResponseUtil.error(
+                500,
+                'Error al actualizar el Auto tanque'
+            );
+        }
+    }
+
+    async updateOrder(id, orderData) {
+        console.log('orderData', orderData);
+        try {
+            const existingOrderData = await this.orderRepository.findOne({
+                where: [
+                    { id: id },
+                ]
+            });
+
+            if (!existingOrderData) {
+                return ResponseUtil.error(
+                    404,
+                    'Pedido no encontrado'
+                );
+            }
+
+            const updatedOrder = await this.orderRepository.save({
+                ...existingOrderData,
+                ...orderData,
+            });
+
+            return ResponseUtil.success(
+                200,
+                'Pedido actualizado exitosamente',
+                updatedOrder
+            );
+
+        } catch (error) {
+            console.log(error);
+
+            return ResponseUtil.error(
+                500,
+                'Error al actualizar el Pedido'
             );
         }
     }

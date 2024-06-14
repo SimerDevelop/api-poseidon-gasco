@@ -39,4 +39,9 @@ export class PropaneTruckController {
   async getByOperatorId(@Param('operator') operator: any): Promise<any> {
     return this.propaneTruckService.getByOperatorId(operator);
   }
+
+  @Put('updateStatus/:id')
+  async updateStatus(@Param('id') id: string, @Body() propaneTruckData: PropaneTruck): Promise<any> {
+    return this.propaneTruckService.updateStatus(id, propaneTruckData);
+  }
 }

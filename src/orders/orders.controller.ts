@@ -6,7 +6,7 @@ import { ApiKeyGuard } from 'src/auth/api-key.middleware';
 @Controller('orders')
 @UseGuards(ApiKeyGuard)
 export class OrdersController {
-  constructor(private readonly ordersService: OrdersService) {}
+  constructor(private readonly ordersService: OrdersService) { }
 
   @Get('all')
   async findAll(): Promise<Order[]> {
@@ -31,5 +31,12 @@ export class OrdersController {
   @Delete(':id')
   async remove(@Param('id') id: string): Promise<any> {
     return this.ordersService.remove(id);
+  }
+
+  //////////////////////////////////////////////////////////////////////////////////////
+
+  @Get('getAvailableOrders')
+  async getAvailableOrders(): Promise<Order[]> {
+    return this.ordersService.getAvailableOrders();
   }
 }
