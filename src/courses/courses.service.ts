@@ -224,32 +224,26 @@ export class CoursesService {
         );
       }
 
-      const operator = await this.userRepository.findOne({
-        where: { id: courseData.operator.toString() }
-      });
+      const orders = await this.orderRepository.findByIds(courseData.orders);
 
-      const locations = await this.locationRepository.findByIds(
-        courseData.locations
-      );
-
-      const updatedCity = await this.courseRepository.save({
+      const updatedCourse = await this.courseRepository.save({
         ...existingCourse,
-        operator: operator,
-        locations: locations
+        orders: orders,
       });
 
-      if (updatedCity) {
+      if (updatedCourse) {
         return ResponseUtil.success(
           200,
           'Derrotero actualizado exitosamente',
-          updatedCity
+          updatedCourse
         );
       }
 
     } catch (error) {
       return ResponseUtil.error(
-        404,
-        'Derrotero no encontrado'
+        500,
+        'Ha ocurrido un error al actualizar el Derrotero',
+        error.message
       );
     }
   }
