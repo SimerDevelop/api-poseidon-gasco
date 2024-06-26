@@ -35,7 +35,6 @@ export class CommonService {
     ) { }
 
     async updateBranchOfficeStatus(id, branchOfficeData) {
-        console.log('branchOfficeData', branchOfficeData);
         try {
             const existingBranchOffice = await this.branchOfficeRepository.findOne({
                 where: [

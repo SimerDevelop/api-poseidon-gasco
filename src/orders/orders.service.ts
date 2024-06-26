@@ -6,6 +6,7 @@ import { ResponseUtil } from 'src/utils/response.util';
 import { v4 as uuidv4 } from 'uuid';
 import { BranchOffices } from 'src/branch-offices/entities/branch-office.entity';
 import { CommonService } from 'src/common-services/common.service';
+import { MailerService } from 'src/utils/mailer.service';
 
 @Injectable()
 export class OrdersService {
@@ -18,10 +19,14 @@ export class OrdersService {
   async create(orderData: Order): Promise<any> {
     try {
       let folio = 1;
-
-      console.log(orderData);
+      let token = '';
 
       if (orderData) {
+
+        if (orderData.validate_token == true) {
+          token = Math.random().toString(36).substr(2, 6);
+        }
+
         const lastOrder = await this.orderRepository.find({
           order: {
             folio: 'DESC',
@@ -47,6 +52,7 @@ export class OrdersService {
 
       const branch_office = await this.branchOfficeRepository.findOne({
         where: { branch_office_code: orderData.branch_office_code },
+        relations: ['client'],
       });
 
       const newOrder = this.orderRepository.create({
@@ -55,6 +61,7 @@ export class OrdersService {
         state: 'ACTIVO',
         status: 'DISPONIBLE',
         folio: folio,
+        token: token,
         branch_office: branch_office,
       });
 
@@ -63,6 +70,10 @@ export class OrdersService {
       if (createdOrder) {
         const status = 'PENDIENTE';
         await this.commonService.updateBranchOfficeStatus(branch_office.id, { status });
+      }
+
+      if (createdOrder.token != '') {
+        MailerService.sendToken(createdOrder, branch_office.client[0].email);
       }
 
       if (createdOrder) {

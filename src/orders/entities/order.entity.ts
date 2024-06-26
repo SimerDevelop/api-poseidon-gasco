@@ -10,6 +10,15 @@ export class Order {
     folio: number;
 
     @Column()
+    validate_geofence: boolean;
+
+    @Column()
+    validate_token: boolean;
+
+    @Column()
+    token: string;
+
+    @Column()
     state: string;
 
     @Column()
