@@ -19,6 +19,9 @@ import { CommonService } from 'src/common-services/common.service';
 import { Course } from 'src/courses/entities/course.entity';
 import { PropaneTruck } from 'src/propane-truck/entities/propane-truck.entity';
 import { Order } from 'src/orders/entities/order.entity';
+import { RequestModule } from 'src/request/request.module';
+import { RequestService } from 'src/request/request.service';
+import { Request } from 'src/request/entities/request.entity';
 
 @Module({
   imports: [
@@ -33,11 +36,13 @@ import { Order } from 'src/orders/entities/order.entity';
       StationaryTank,
       Course,
       PropaneTruck,
-      Order
+      Order,
+      Request
     ]),
     CommonModule,
+    RequestModule
   ],
   controllers: [BillController],
-  providers: [BillService, NotificationsService, UsuariosService, StationaryTankService, CommonService]
+  providers: [BillService, NotificationsService, UsuariosService, StationaryTankService, CommonService, RequestService]
 })
 export class BillModule { }

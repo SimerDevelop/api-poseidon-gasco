@@ -24,11 +24,6 @@ export class BillController {
     return this.billService.create(billData);
   }
 
-  @Post('prueba')
-  async prueba(@Body() billData: any): Promise<any> {
-    return this.billService.prueba(billData);
-  }
-
   @Post('createMultiple')
   async createMultiple(@Body() billData: any): Promise<Bill> {
     return this.billService.createMultiple(billData);

@@ -50,8 +50,6 @@ export class BranchOfficesService {
           // Asignar el nuevo código único a la variable branch_office_code
           branch_office_code = newbranch_office_code;
         }
-
-        console.log(branchOfficeData);
         
         const existingBranchOffice = await this.branchOfficeRepository.findOne({
           where: {

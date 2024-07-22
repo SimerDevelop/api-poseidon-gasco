@@ -18,6 +18,8 @@ import { StationaryTank } from 'src/stationary-tank/entities/stationary-tank.ent
 import { StationaryTankService } from 'src/stationary-tank/stationary-tank.service';
 import { BillModule } from 'src/bill/bill.module';
 import { CommonModule } from 'src/common-services/common.module';
+import { RequestModule } from 'src/request/request.module';
+import { Request } from 'src/request/entities/request.entity';
 
 @Module({
   imports: [
@@ -30,12 +32,14 @@ import { CommonModule } from 'src/common-services/common.module';
       Bill,
       Usuario,
       Notification,
-      StationaryTank
+      StationaryTank,
+      Request
     ]),
     NotificationsModule,
     UsuariosModule,
     BillModule,
-    CommonModule
+    CommonModule,
+    RequestModule
   ],
   controllers: [BranchOfficesController],
   providers: [

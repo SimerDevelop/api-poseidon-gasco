@@ -9,6 +9,7 @@ import { ResponseUtil } from 'src/utils/response.util'
 import { enviroment } from 'src/utils/environment.prod'
 import * as fs from 'fs'
 import { parse } from 'date-fns'
+import * as moment from 'moment-timezone';
 
 const tempDir = enviroment.srcDir + '/temp';
 const pythonScriptPath = enviroment.pythonScriptPath;
@@ -72,38 +73,45 @@ export class GraphsService {
 
   async generateCsvbyDate(branchOfficeCode: number, billData: any) {
     try {
-      const startDate = "01/" + billData.date;
-      const endDate = "31/" + billData.date;
+      const startDateTime = new Date(billData.start + ' ' + billData.time_start)
+      const endDateTime = new Date(billData.end + ' ' + billData.time_end)
 
-      const startDateFormat = transformDate(startDate);
-      const endDateFormat = transformDate(endDate);
-
-      const bills = await this.billRepository
+      const data = await this.billRepository
         .createQueryBuilder('bill')
         .where('branch_office_code = :branchOfficeCode', { branchOfficeCode })
-        .andWhere("fechaInicial >= :startDateFormat", { startDateFormat })
-        .andWhere("fechaInicial <= :endDateFormat", { endDateFormat })
+        .where("fecha >= :startDateTime", { startDateTime })
+        .andWhere("fecha <= :endDateTime", { endDateTime })
         .getMany();
 
-      const records = bills.map(bill => ({
-        id: bill.id,
-        status: bill.status,
-        densidad: bill.charge.densidad,
-        temperatura: bill.charge.temperatura,
-        masaTotal: bill.charge.masaTotal,
-        volumenTotal: bill.charge.volumenTotal,
-        horaInicial: bill.charge.horaInicial,
-        fechaInicial: bill.charge.fechaInicial,
-        horaFinal: bill.charge.horaFinal,
-        fechaFinal: bill.charge.fechaFinal,
-        total: bill.total,
-        create: bill.create,
-        update: bill.update,
+      const formattedData = data.map(item => ({
+        ...item,
+        fecha: moment.tz(item.fecha, 'America/Bogota').format('YYYY-MM-DD HH:mm:ss')
+      }));
+
+      const records = formattedData.map(data => ({
+        id: data.id,
+        status: data.status,
+        bill_code: data.bill_code,
+        densidad: parseFloat(data.charge.densidad),
+        temperatura: parseFloat(data.charge.temperatura),
+        masaTotal: parseFloat(data.charge.masaTotal),
+        volumenTotal: parseFloat(data.charge.volumenTotal),
+        horaInicial: data.charge.horaInicial,
+        fechaInicial: data.charge.fechaInicial,
+        horaFinal: data.charge.horaFinal,
+        fechaFinal: data.charge.fechaFinal,
+        fecha: data.fecha,
+        total: data.total,
+        operator: data.operator_firstName + ' ' + data.operator_lastName,
+        plate: data.plate,
+        create: data.create,
+        update: data.update,
       }))
 
       const headers = [
         'id',
         'status',
+        'remision',
         'densidad',
         'temperatura',
         'masaTotal',
@@ -112,14 +120,23 @@ export class GraphsService {
         'fechaInicial',
         'horaFinal',
         'fechaFinal',
+        'fecha',
         'total',
+        'operator',
+        'plate',
         'create',
         'update'
       ];
 
+      if (records.length < 1) {
+        return ResponseUtil.error(400, 'No hay datos para generar el csv')
+      }
+
+      console.log('Datos descargados correctamente' + ' ' + records.length + ' ' + 'registros');
       return ResponseUtil.success(200, 'Datos csv generados correctamente', { headers, records })
 
     } catch (error) {
+      console.error(error);
       return ResponseUtil.error(400, 'Error al generar el csv', error)
     }
   }

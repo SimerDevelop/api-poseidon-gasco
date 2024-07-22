@@ -18,6 +18,9 @@ export class Bill {
     total: number;
 
     @Column()
+    bill_code: number;
+
+    @Column()
     branch_office_name: string;
 
     @Column()
@@ -67,6 +70,18 @@ export class Bill {
 
     @Column()
     fechaFinal: string;
+
+    @Column()
+    fecha: Date;
+
+    @Column({ type: 'int', width: 7 })
+    folio: number;
+
+    @Column()
+    payment_type: string;
+
+    @Column()
+    plate: string;
 
     @ManyToMany(() => Client, { cascade: true })
     @JoinTable()

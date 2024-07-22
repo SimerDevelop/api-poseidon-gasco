@@ -193,7 +193,7 @@ export class CommonService {
             if (!courses || courses.length === 0) {
                 return ResponseUtil.error(
                     404,
-                    'No se encontraron cursos para el operario'
+                    'No se encontraron Derroteros para el operario'
                 );
             }
 
@@ -237,14 +237,14 @@ export class CommonService {
 
             return ResponseUtil.success(
                 200,
-                'Cursos completado exitosamente',
+                'Derrotero completado exitosamente',
             );
 
         } catch (error) {
             console.error('Error al ejecutar la consulta:', error);
             return ResponseUtil.error(
                 500,
-                'Error al buscar los cursos'
+                'Error al buscar los Derroteros'
             );
         }
     }

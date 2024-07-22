@@ -13,6 +13,9 @@ import { NotificationsService } from 'src/notifications/notifications.service';
 import { UsuariosService } from 'src/usuarios/usuarios.service';
 import { Notification } from 'src/notifications/entities/notification.entity';
 import { CommonService } from 'src/common-services/common.service';
+import { RequestService } from 'src/request/request.service';
+import { Request } from 'src/request/entities/request.entity';
+import * as moment from 'moment-timezone';
 
 function transformDate(dateStr) {
   const [day, month, year] = dateStr.split('/');
@@ -27,11 +30,12 @@ export class BillService {
     @InjectRepository(BranchOffices) private branchOfficeRepository: Repository<BranchOffices>,
     @InjectRepository(Usuario) private userRepository: Repository<Usuario>,
     @InjectRepository(Client) private clientRepository: Repository<Client>,
+    @InjectRepository(Request) private requestRepository: Repository<Request>,
     @InjectRepository(Notification) private notificationRepository: Repository<Notification>,
     @Inject(NotificationsService) private notificationsService: NotificationsService,
     @Inject(UsuariosService) private userService: UsuariosService,
     private commonService: CommonService,
-
+    private requestService: RequestService
   ) { }
 
   async create(billData: Bill): Promise<any> {
@@ -64,6 +68,29 @@ export class BillService {
         return response;
       }
 
+      // Generación de código Unico para la factura
+      var bill_code = await this.generateUniqueCode();
+
+      var existing_code = await this.billRepository.findOne({
+        where: {
+          bill_code: bill_code
+        },
+      });
+
+      while (existing_code) {
+        // Generar un nuevo código único
+        const new_code = await this.generateUniqueCode();
+        // Verificar si ya existe un permiso con el nuevo nombre
+        existing_code = await this.billRepository.findOne({
+          where: {
+            bill_code: new_code
+          },
+        });
+
+        // Asignar el nuevo código único a la variable branch_office_code
+        bill_code = new_code;
+      }
+
       const branchOfficeId = billData.branch_office;
 
       const branch_office = await this.branchOfficeRepository.findByIds(
@@ -80,10 +107,14 @@ export class BillService {
 
       const total = branch_office[0].kilogramValue * billData.charge.masaTotal
 
+      const formattedFecha = formatFecha(billData.charge.fechaInicial, billData.charge.horaInicial);
+      console.log('FECHA FORMATEADA::', formattedFecha);
+
       if (billData) {
         const newBill = this.billRepository.create({
           ...billData,
           id: uuidv4(), // Generar un nuevo UUID
+          bill_code: bill_code,
           branch_office_name: branch_office[0].name,
           branch_office_nit: branch_office[0].nit,
           branch_office_address: branch_office[0].address,
@@ -95,12 +126,13 @@ export class BillService {
           operator_lastName: operator[0].lastName,
           densidad: billData.charge.densidad,
           temperatura: billData.charge.temperatura,
-          masaTotal: billData.charge.masaTotal,
+          masaTotal: parseFloat(billData.charge.masaTotal),
           volumenTotal: billData.charge.volumenTotal,
           horaInicial: billData.charge.horaInicial,
           horaFinal: billData.charge.horaFinal,
-          fechaInicial: transformDate(billData.charge.fechaInicial),
-          fechaFinal: transformDate(billData.charge.fechaFinal),
+          fechaInicial: billData.charge.fechaInicial,
+          fechaFinal: billData.charge.fechaFinal,
+          fecha: formattedFecha,
           total: total,
         });
 
@@ -129,9 +161,31 @@ export class BillService {
             "status": "CARGADO"
           }
 
-          const responseupdateStatus = await this.commonService.updateBranchOfficeStatus(branchOfficeId, statusBranchOffice);
+          const data_series = {
+            densidad: billData.charge.densidad,
+            temperatura: billData.charge.temperatura,
+            masaTotal: billData.charge.masaTotal,
+            volumenTotal: billData.charge.volumenTotal,
+            horaInicial: billData.charge.horaInicial,
+            horaFinal: billData.charge.horaFinal,
+            fechaInicial: transformDate(billData.charge.fechaInicial),
+            fechaFinal: transformDate(billData.charge.fechaFinal),
+            total: total,
+          }
 
-          if (responseupdateStatus.statusCode == 200) {
+          const requestData = this.requestRepository.create({
+            folio: billData.folio,
+            payment_type: billData.payment_type,
+            plate: billData.plate,
+            idNumber: operator[0].idNumber,
+            branch_office_code: branch_office[0].branch_office_code,
+            data_series: data_series
+          });
+
+          await this.requestService.create(requestData);
+          const responseUpdateStatus = await this.commonService.updateBranchOfficeStatus(branchOfficeId, statusBranchOffice);
+
+          if (responseUpdateStatus.statusCode == 200) {
             this.commonService.findCoursesByOperatorNameAndLastName(createdBill.operator_firstName, createdBill.operator_lastName);
           }
 
@@ -140,9 +194,10 @@ export class BillService {
             'Factura creada exitosamente',
             createdBill
           );
+
         } else {
           return ResponseUtil.error(
-            500,
+            400,
             'Ha ocurrido un problema al crear la factura',
           );
         }
@@ -150,7 +205,7 @@ export class BillService {
     } catch (error) {
       return ResponseUtil.error(
         500,
-        `Error al crear la factura: ${error}`,
+        'Ha ocurrido un error al crear la factura',
         error.message
       );
     }
@@ -331,7 +386,6 @@ export class BillService {
 
   ///////////////////////////////////////////////////////////////////////////////////
 
-
   async findByDate(branchOfficeCode: number, billData: any): Promise<any> {
     try {
       const startDate = "01/" + billData.date;
@@ -375,6 +429,12 @@ export class BillService {
         .createQueryBuilder('bill')
         .where('branch_office_code = :branchOfficeCode', { branchOfficeCode })
         .getMany();
+
+        bills.forEach(item => {
+          const dateInBogota = moment.tz(item.fecha, 'America/Bogota').subtract(5, 'hours');
+          const formattedDate = dateInBogota.format('YYYY-MM-DD HH:mm:ss');
+          item.fecha = new Date(formattedDate);
+        });
 
       if (bills.length < 1) {
         return ResponseUtil.error(
@@ -461,11 +521,38 @@ export class BillService {
     }
   }
 
-  prueba(billData: any) {
-    return {
-      "Hola": "Frandisco",
-      "enviaste esto: ": billData
+  private async generateUniqueCode(): Promise<number> {
+    let uniqueBillCodeGenerated = false;
+    let newBillCode: number = 1;
+    while (!uniqueBillCodeGenerated) {
+      const existingBill = await this.billRepository.findOne({
+        where: { bill_code: newBillCode },
+      });
+      if (!existingBill) {
+        uniqueBillCodeGenerated = true;
+      } else {
+        newBillCode += 1;
+        if (newBillCode > 999999) {
+          throw new Error("No more unique codes can be generated.");
+        }
+      }
     }
+    return newBillCode;
   }
 
+}
+
+function formatFecha(fechaInicial: string, horaInicial: string): string {
+  const [day, month, year] = fechaInicial.split("/");
+  const [hour, minute, second] = horaInicial.split(":");
+  const paddedDay = day.padStart(2, '0');
+  const paddedMonth = month.padStart(2, '0');
+  const paddedHour = hour.padStart(2, '0');
+  const paddedMinute = minute.padStart(2, '0');
+  const paddedSecond = second.padStart(2, '0');
+  const fechaString = `20${year}-${paddedMonth}-${paddedDay}T${paddedHour}:${paddedMinute}:${paddedSecond}`;
+  const fecha = moment.tz(fechaString, 'America/Bogota');
+
+  const formattedFecha = fecha.format('YYYY-MM-DD HH:mm:ss');
+  return formattedFecha;
 }
