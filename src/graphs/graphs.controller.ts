@@ -12,9 +12,14 @@ export class GraphsController {
     return this.graphsService.generateCsv(branchOfficeId);
   }
 
-  @Post('generateCsvbyDate/:code')
-  async generateCsvbyDate(@Param('code') code: number, @Body() billData: any): Promise<any> {    
-    return this.graphsService.generateCsvbyDate(code, billData);
+  @Post('generateCsvbyBranchOffice/:code')
+  async generateCsvbyBranchOffice(@Param('code') code: number, @Body() billData: any): Promise<any> {    
+    return this.graphsService.generateCsvbyBranchOffice(code, billData);
+  }
+
+  @Post('generateCsvbyPropaneTruck/:plate')
+  async generateCsvbyPropaneTruck(@Param('plate') plate: number, @Body() billData: any): Promise<any> {    
+    return this.graphsService.generateCsvbyPropaneTruck(plate, billData);
   }
 
   @Post('daily-purchase')

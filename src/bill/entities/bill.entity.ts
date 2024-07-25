@@ -74,6 +74,9 @@ export class Bill {
     @Column()
     fecha: Date;
 
+    @Column()
+    service_time: string;
+
     @Column({ type: 'int', width: 7 })
     folio: number;
 

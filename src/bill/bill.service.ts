@@ -108,7 +108,16 @@ export class BillService {
       const total = branch_office[0].kilogramValue * billData.charge.masaTotal
 
       const formattedFecha = formatFecha(billData.charge.fechaInicial, billData.charge.horaInicial);
-      console.log('FECHA FORMATEADA::', formattedFecha);
+
+      const fechaInicial = formatFecha(billData.charge.fechaInicial, billData.charge.horaInicial);
+      const fechaFinal = formatFecha(billData.charge.fechaFinal, billData.charge.horaFinal);
+
+      const fechaInicialMoment = moment(fechaInicial, 'YYYY-MM-DD HH:mm:ss');
+      const fechaFinalMoment = moment(fechaFinal, 'YYYY-MM-DD HH:mm:ss');
+
+      const duration = Math.abs(fechaFinalMoment.diff(fechaInicialMoment));      
+
+      const service_time = msToTime(duration);
 
       if (billData) {
         const newBill = this.billRepository.create({
@@ -133,6 +142,7 @@ export class BillService {
           fechaInicial: billData.charge.fechaInicial,
           fechaFinal: billData.charge.fechaFinal,
           fecha: formattedFecha,
+          service_time: service_time,
           total: total,
         });
 
@@ -166,10 +176,9 @@ export class BillService {
             temperatura: billData.charge.temperatura,
             masaTotal: billData.charge.masaTotal,
             volumenTotal: billData.charge.volumenTotal,
-            horaInicial: billData.charge.horaInicial,
-            horaFinal: billData.charge.horaFinal,
-            fechaInicial: transformDate(billData.charge.fechaInicial),
-            fechaFinal: transformDate(billData.charge.fechaFinal),
+            fechaInicial: fechaInicial,
+            fechaFinal: fechaFinal,
+            service_time: service_time,
             total: total,
           }
 
@@ -430,11 +439,11 @@ export class BillService {
         .where('branch_office_code = :branchOfficeCode', { branchOfficeCode })
         .getMany();
 
-        bills.forEach(item => {
-          const dateInBogota = moment.tz(item.fecha, 'America/Bogota').subtract(5, 'hours');
-          const formattedDate = dateInBogota.format('YYYY-MM-DD HH:mm:ss');
-          item.fecha = new Date(formattedDate);
-        });
+      bills.forEach(item => {
+        const dateInBogota = moment.tz(item.fecha, 'America/Bogota').subtract(5, 'hours');
+        const formattedDate = dateInBogota.format('YYYY-MM-DD HH:mm:ss');
+        item.fecha = new Date(formattedDate);
+      });
 
       if (bills.length < 1) {
         return ResponseUtil.error(
@@ -555,4 +564,16 @@ function formatFecha(fechaInicial: string, horaInicial: string): string {
 
   const formattedFecha = fecha.format('YYYY-MM-DD HH:mm:ss');
   return formattedFecha;
+}
+
+function msToTime(duration: number) {
+  const seconds = Math.floor((duration / 1000) % 60);
+  const minutes = Math.floor((duration / (1000 * 60)) % 60);
+  const hours = Math.floor((duration / (1000 * 60 * 60)) % 24);
+
+  const hoursStr = (hours < 10) ? "0" + hours : hours;
+  const minutesStr = (minutes < 10) ? "0" + minutes : minutes;
+  const secondsStr = (seconds < 10) ? "0" + seconds : seconds;
+
+  return hoursStr + ":" + minutesStr + ":" + secondsStr;
 }

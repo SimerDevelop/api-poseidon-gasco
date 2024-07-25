@@ -8,6 +8,7 @@ import { Order } from 'src/orders/entities/order.entity';
 import { PropaneTruck } from 'src/propane-truck/entities/propane-truck.entity';
 import { Usuario } from 'src/usuarios/entities/usuario.entity';
 import { BranchOffices } from 'src/branch-offices/entities/branch-office.entity';
+import * as moment from 'moment-timezone';
 
 @Injectable()
 export class RequestService {
@@ -264,4 +265,21 @@ export class RequestService {
     }
   }
 
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+
+function formatFecha(fechaInicial: string, horaInicial: string): string {
+  const [day, month, year] = fechaInicial.split("/");
+  const [hour, minute, second] = horaInicial.split(":");
+  const paddedDay = day.padStart(2, '0');
+  const paddedMonth = month.padStart(2, '0');
+  const paddedHour = hour.padStart(2, '0');
+  const paddedMinute = minute.padStart(2, '0');
+  const paddedSecond = second.padStart(2, '0');
+  const fechaString = `20${year}-${paddedMonth}-${paddedDay}T${paddedHour}:${paddedMinute}:${paddedSecond}`;
+  const fecha = moment.tz(fechaString, 'America/Bogota');
+
+  const formattedFecha = fecha.format('YYYY-MM-DD HH:mm:ss');
+  return formattedFecha;
 }

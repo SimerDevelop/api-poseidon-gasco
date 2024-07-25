@@ -71,7 +71,7 @@ export class GraphsService {
     }
   }
 
-  async generateCsvbyDate(branchOfficeCode: number, billData: any) {
+  async generateCsvbyBranchOffice(branchOfficeCode: number, billData: any) {
     try {
       const startDateTime = new Date(billData.start + ' ' + billData.time_start)
       const endDateTime = new Date(billData.end + ' ' + billData.time_end)
@@ -79,7 +79,7 @@ export class GraphsService {
       const data = await this.billRepository
         .createQueryBuilder('bill')
         .where('branch_office_code = :branchOfficeCode', { branchOfficeCode })
-        .where("fecha >= :startDateTime", { startDateTime })
+        .andWhere("fecha >= :startDateTime", { startDateTime })
         .andWhere("fecha <= :endDateTime", { endDateTime })
         .getMany();
 
@@ -103,6 +103,7 @@ export class GraphsService {
         fecha: data.fecha,
         total: data.total,
         operator: data.operator_firstName + ' ' + data.operator_lastName,
+        branch_office_name: data.branch_office_name,
         plate: data.plate,
         create: data.create,
         update: data.update,
@@ -132,8 +133,81 @@ export class GraphsService {
         return ResponseUtil.error(400, 'No hay datos para generar el csv')
       }
 
-      console.log('Datos descargados correctamente' + ' ' + records.length + ' ' + 'registros');
-      return ResponseUtil.success(200, 'Datos csv generados correctamente', { headers, records })
+      console.log(`Datos csv generados correctamente con código de establecimiento ${branchOfficeCode}` + ' ' + records.length + ' ' + 'registros');
+      return ResponseUtil.success(200, `Datos csv generados correctamente con código de establecimiento ${branchOfficeCode}`, { headers, records })
+
+    } catch (error) {
+      console.error(error);
+      return ResponseUtil.error(400, 'Error al generar el csv', error)
+    }
+  }
+
+  async generateCsvbyPropaneTruck(plate: number, billData: any) {
+    try {
+      const startDateTime = new Date(billData.start + ' ' + billData.time_start)
+      const endDateTime = new Date(billData.end + ' ' + billData.time_end)
+
+      const data = await this.billRepository
+        .createQueryBuilder('bill')
+        .where('plate = :plate', { plate })
+        .andWhere("fecha >= :startDateTime", { startDateTime })
+        .andWhere("fecha <= :endDateTime", { endDateTime })
+        .getMany();
+
+      const formattedData = data.map(item => ({
+        ...item,
+        fecha: moment.tz(item.fecha, 'America/Bogota').format('YYYY-MM-DD HH:mm:ss')
+      }));
+
+      const records = formattedData.map(data => ({
+        id: data.id,
+        status: data.status,
+        bill_code: data.bill_code,
+        densidad: parseFloat(data.charge.densidad),
+        temperatura: parseFloat(data.charge.temperatura),
+        masaTotal: parseFloat(data.charge.masaTotal),
+        volumenTotal: parseFloat(data.charge.volumenTotal),
+        horaInicial: data.charge.horaInicial,
+        fechaInicial: data.charge.fechaInicial,
+        horaFinal: data.charge.horaFinal,
+        fechaFinal: data.charge.fechaFinal,
+        fecha: data.fecha,
+        service_time: data.service_time,
+        total: data.total,
+        operator: data.operator_firstName + ' ' + data.operator_lastName,
+        branch_office_name: data.branch_office_name,
+        plate: data.plate,
+        create: data.create,
+        update: data.update,
+      }))
+
+      const headers = [
+        'id',
+        'status',
+        'remision',
+        'densidad',
+        'temperatura',
+        'masaTotal',
+        'volumenTotal',
+        'horaInicial',
+        'fechaInicial',
+        'horaFinal',
+        'fechaFinal',
+        'fecha',
+        'tiempo de servicio',
+        'total',
+        'operator',
+        'plate',
+        'create',
+        'update'
+      ];
+
+      if (records.length < 1) {
+        return ResponseUtil.error(400, 'No hay datos para generar el csv')
+      }
+
+      console.log(`Datos csv generados correctamente con placa de auto-tanque ${plate}` + ' ' + records.length + ' ' + 'registros');
+      return ResponseUtil.success(200, `Datos csv generados correctamente con placa de auto-tanque ${plate}`, { headers, records })
 
     } catch (error) {
       console.error(error);
