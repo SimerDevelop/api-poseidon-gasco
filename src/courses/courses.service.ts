@@ -57,7 +57,7 @@ export class CoursesService {
         }
 
         await this.commonService.updatePropaneTruckStatus(propane_truck.id, status)
-        await this.commonService.updateUserStatus(operator.id, status)
+        //await this.commonService.updateUserStatus(operator.id, status)
       }
 
       if (!createdCourse) {
