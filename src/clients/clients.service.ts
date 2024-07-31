@@ -17,6 +17,9 @@ export class ClientsService {
   async create(clientData: Client): Promise<any> {
     try {
 
+      console.log(clientData);
+
+
       const existingClient = await this.clientRepository.findOne({
         where: { cc: clientData.cc },
       });
@@ -27,9 +30,20 @@ export class ClientsService {
         );
       }
 
-      const occupation = await this.occupationRepository.findByIds(
-        clientData.occupation
-      );
+      const occupation = await this.occupationRepository
+        .createQueryBuilder("occupation")
+        .where("occupation.id = :occupationId OR occupation.name = :occupationName", {
+          occupationId: clientData.occupation,
+          occupationName: clientData.occupation
+        })
+        .getMany();
+
+      if (occupation.length < 1) {
+        return ResponseUtil.error(
+          400,
+          'La ocupación no existe'
+        );
+      }
 
       if (clientData) {
         const newClient = this.clientRepository.create({
@@ -57,7 +71,8 @@ export class ClientsService {
     } catch (error) {
       return ResponseUtil.error(
         500,
-        'Error al crear el Cliente'
+        'Error al crear el Cliente',
+        error.message
       );
     }
   }
@@ -190,12 +205,34 @@ export class ClientsService {
 
   /////////////////////////////////////////////////////////////////////////////////////
 
+  async createMultiple(data: any): Promise<any> {
+    const chunkSize = 500;
+    const createdClients = [];
+
+    for (let i = 0; i < data.length; i += chunkSize) {
+      const chunk = data.slice(i, i + chunkSize);
+      const promises = chunk.map((item: any) => this.create(item));
+      const responses = await Promise.all(promises);
+
+      const successfulClients = responses
+        .filter(response => response.statusCode === 200)
+        .map(response => response.data.id);
+
+      createdClients.push(...successfulClients);
+    }
+
+    return ResponseUtil.success(
+      200,
+      'Clientes creados exitosamente',
+      createdClients
+    );
+  }
 
   async getByBranchOfficeId(branchOfficeId: string): Promise<any> {
     try {
 
       console.log(branchOfficeId);
-      
+
       const client = await this.clientRepository
         .createQueryBuilder('clients')
         .innerJoinAndSelect('clients.branch_office', 'branchOffice')
@@ -222,7 +259,6 @@ export class ClientsService {
         'Ha ocurrido un error al obtener el Cliente'
       );
     }
-
   }
 
 }

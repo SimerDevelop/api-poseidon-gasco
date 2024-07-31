@@ -40,4 +40,9 @@ export class ClientsController {
   async getByBranchOfficeId(@Param('id') id: string): Promise<any> {
     return this.clientstService.getByBranchOfficeId(id);
   }
+
+  @Post('createMultiple')
+  async createMultiple(@Body() clientData: Client): Promise<Client> {
+      return this.clientstService.createMultiple(clientData);
+  }
 }
