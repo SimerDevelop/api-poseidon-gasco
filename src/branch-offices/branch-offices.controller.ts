@@ -28,11 +28,6 @@ export class BranchOfficesController {
         return this.branchOfficesService.create(branchOfficeData);
     }
 
-    @Post('createForOperator')
-    async createBranchOfficeForOperator(@Body() branchOfficeData: BranchOffices): Promise<BranchOffices> {
-        return this.branchOfficesService.createBranchOfficeForOperator(branchOfficeData);
-    }
-
     @Put('update/:id')
     async update(@Param('id') id: string, @Body() branchOfficeData: BranchOffices): Promise<any> {
         return this.branchOfficesService.update(id, branchOfficeData);
@@ -55,11 +50,6 @@ export class BranchOfficesController {
         return this.branchOfficesService.findBranchOfficesWithBills();
     }
 
-    @Post('createMultiple')
-    async createMultiple(@Body() branchOfficeData: BranchOffices): Promise<BranchOffices> {
-        return this.branchOfficesService.createMultiple(branchOfficeData);
-    }
-
     @Get('getAvailableBranchOffices')
     async getAvailableBranchOffices(): Promise<Permissions[]> {
         return this.branchOfficesService.getAvailableBranchOffices();
@@ -68,6 +58,11 @@ export class BranchOfficesController {
     @Put('updateStatus/:id')
     async updateStatus(@Param('id') id: string, @Body() branchOfficeData: BranchOffices): Promise<any> {
         return this.branchOfficesService.updateStatus(id, branchOfficeData);
+    }
+
+    @Post('createMultiple')
+    async createMultiple(@Body() branchOfficeData: BranchOffices): Promise<BranchOffices> {
+        return this.branchOfficesService.createMultiple(branchOfficeData);
     }
     
 }

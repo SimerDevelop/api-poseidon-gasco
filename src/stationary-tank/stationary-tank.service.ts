@@ -111,7 +111,10 @@ export class StationaryTankService {
   async update(id, stationaryTankData) {
     try {
       const existingPropaneTank = await this.stationaryTankRepository.findOne({
-        where: { id },
+        where: [
+          { id: id },
+          { serial: id }
+        ]
       });
 
       if (!existingPropaneTank) {
@@ -158,7 +161,7 @@ export class StationaryTankService {
           'No se puede eliminar un Tanque estacionario asignado'
         );
       }
-      
+
       existingPropaneTank.state = 'INACTIVO';
       const updatedPropaneTank = await this.stationaryTankRepository.save(existingPropaneTank);
 
@@ -188,7 +191,7 @@ export class StationaryTankService {
     try {
       const propaneTanks = await this.stationaryTankRepository.find({
         where: { status: 'NO ASIGNADO', state: 'ACTIVO' }
-    });
+      });
 
       if (propaneTanks.length < 1) {
         return ResponseUtil.error(
@@ -271,7 +274,7 @@ export class StationaryTankService {
     console.log('==============DATOS DE TANQUES ESTACIONARIOS=============');
     console.log(data);
     console.log('=========================================================');
-    
+
 
     for (let i = 0; i < data.length; i++) {
       await new Promise(resolve => setTimeout(resolve, 500)); // Espera 1 segundo
@@ -279,7 +282,7 @@ export class StationaryTankService {
       console.log('==============RESPONSE=============');
       console.log(response);
       console.log('===================================');
-      
+
 
       if (response.statusCode === 200) {
         createdIds.push(response.data.id);
