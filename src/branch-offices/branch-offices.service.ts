@@ -364,7 +364,13 @@ export class BranchOfficesService {
     try {
       const existingBranchOffice = await this.branchOfficeRepository.findOne({
         where: { id },
+        relations: [
+          'stationary_tanks'
+        ]
       });
+
+      console.log('Establecimiento encontrado::',existingBranchOffice);
+      
 
       if (!existingBranchOffice) {
         return ResponseUtil.error(404, 'Sucursal no encontrada');
@@ -381,11 +387,23 @@ export class BranchOfficesService {
       const updatedBranchOffice = await this.branchOfficeRepository.save(existingBranchOffice);
 
       if (updatedBranchOffice) {
+
+        const data: any = {
+          status: "NO ASIGNADO"
+        }
+
+        const promises = existingBranchOffice.stationary_tanks.map((stationary_tank, i) =>
+          this.StationaryTankService.update(stationary_tank.id, data).then((response) => {
+            console.log(`Tanque estacionario ${stationary_tank.serial} actualizado`);
+          })
+        );
+
         return ResponseUtil.success(
           200,
           'Sucursal eliminada exitosamente',
           updatedBranchOffice
         );
+
       } else {
         return ResponseUtil.error(
           500,
@@ -587,26 +605,25 @@ export class BranchOfficesService {
     try {
       const chunkSize = 500;
       const createdBranchOffices = [];
-  
+
       for (let i = 0; i < data.length; i += chunkSize) {
         const chunk = data.slice(i, i + chunkSize);
         const promises = chunk.map((item: any) => this.create(item));
         const responses = await Promise.all(promises);
-  
+
         const successfulBranchOffices = responses
           .filter(response => response.statusCode === 200)
           .map(response => response.data.id);
-  
+
         createdBranchOffices.push(...successfulBranchOffices);
       }
 
-      console.log('createdBranchOffices', createdBranchOffices.length);
-      
-  
+      console.log('=========Se han creado', createdBranchOffices.length, 'sucursales=========');
+
       if (createdBranchOffices.length < 1) {
         return ResponseUtil.error(400, 'Uno o mas campos son incorrectos');
       }
-  
+
       return ResponseUtil.success(
         200,
         'Establecimientos creados exitosamente',
