@@ -21,11 +21,11 @@ export class UsuariosService {
         // Verificar si ya existe un usuario con el numero de identificación
         const existingUser = await this.usuariosRepository
           .createQueryBuilder('usuario')
-          .where('usuario.idNumber = :idNumber', { idNumber: userData.idNumber })
+          .where('usuario.idNumber = :idNumber OR usuario.email = :email', { idNumber: userData.idNumber, email: userData.email})
           .getOne();
 
         if (existingUser) {
-          return ResponseUtil.error(400, 'El numero de identificación ya esta registrado');
+          return ResponseUtil.error(400, 'El numero de identificación o email ya esta registrado');
         }
 
         const hashedPassword = await bcrypt.hash(userData.password, 10);
@@ -297,9 +297,12 @@ export class UsuariosService {
         throw new NotFoundException('Usuario no encontrado');
       }
 
+      const hashedPassword = await bcrypt.hash(userData.password, 10);
+
       const updatedUser = await this.usuariosRepository.save({
         ...existingUser,
         ...userData,
+        password: hashedPassword,
       });
 
       return ResponseUtil.success(

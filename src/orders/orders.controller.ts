@@ -39,4 +39,9 @@ export class OrdersController {
   async getAvailableOrders(): Promise<Order[]> {
     return this.ordersService.getAvailableOrders();
   }
+
+  @Delete('delete/:id')
+  async delete(@Param('id') id: string): Promise<any> {
+    return this.ordersService.delete(id);
+  }
 }

@@ -39,16 +39,16 @@ export class OrdersService {
         }
       }
 
-      const existingOrder = await this.orderRepository.findOne({
-        where: { branch_office_code: orderData.branch_office_code },
-      });
+      // const existingOrder = await this.orderRepository.findOne({
+      //   where: { branch_office_code: orderData.branch_office_code },
+      // });
 
-      if (existingOrder) {
-        return ResponseUtil.error(
-          400,
-          'Ya existe un Pedido con el mismo código de sucursal'
-        );
-      }
+      // if (existingOrder) {
+      //   return ResponseUtil.error(
+      //     400,
+      //     'Ya existe un Pedido con el mismo código de sucursal'
+      //   );
+      // }
 
       const branch_office = await this.branchOfficeRepository.findOne({
         where: { branch_office_code: orderData.branch_office_code },
@@ -214,6 +214,39 @@ export class OrdersService {
         );
       }
     } catch (error) {
+      return ResponseUtil.error(
+        500,
+        'Error al eliminar el Pedido'
+      );
+    }
+  }
+
+  async delete(id: string): Promise<any> {
+    try {
+      const existingOrder = await this.orderRepository.findOne({
+        where: { id },
+      });
+
+      if (!existingOrder) {
+        return ResponseUtil.error(404, 'Pedido no encontrado');
+      }
+
+      if (existingOrder.status != 'DISPONIBLE') {
+        return ResponseUtil.error(
+          400,
+          'No se puede eliminar un Pedido que no esté DISPONIBLE'
+        );
+      }
+
+      await this.orderRepository.remove(existingOrder);
+
+      return ResponseUtil.success(
+        200,
+        'Pedido eliminado exitosamente'
+      );
+    } catch (error) {
+      console.log(error);
+
       return ResponseUtil.error(
         500,
         'Error al eliminar el Pedido'

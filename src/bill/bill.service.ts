@@ -171,6 +171,10 @@ export class BillService {
             "status": "CARGADO"
           }
 
+          const statusOrder = {
+            "status": "FINALIZADO"
+          }
+
           const data_series = {
             densidad: billData.charge.densidad,
             temperatura: billData.charge.temperatura,
@@ -196,6 +200,7 @@ export class BillService {
 
           if (responseUpdateStatus.statusCode == 200) {
             this.commonService.findCoursesByOperatorNameAndLastName(createdBill.operator_firstName, createdBill.operator_lastName);
+            this.commonService.updateOrder(createdBill.folio, statusOrder);
           }
 
           return ResponseUtil.success(

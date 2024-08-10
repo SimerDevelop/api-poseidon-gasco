@@ -286,6 +286,57 @@ export class CoursesService {
     try {
       const existingCourse = await this.courseRepository.findOne({
         where: { id },
+        relations: ['operator', 'propane_truck', 'orders', 'orders.branch_office']
+      });
+
+      if (!existingCourse) {
+        return ResponseUtil.error(404, 'Derrotero no encontrado');
+      }
+
+      const status = {
+        'status': 'DISPONIBLE'
+      }
+      const statusBranchOffice = {
+        'status': 'PENDIENTE'
+      }
+
+      for (let i = 0; i < existingCourse.orders.length; i++) {
+        if (existingCourse.orders[i].status != 'FINALIZADO') {
+          await this.commonService.updateOrder(existingCourse.orders[i].id, status);
+        }
+
+        if (existingCourse.orders[i].branch_office.status == 'CARGADO') {
+          await this.commonService.updateBranchOfficeStatus(existingCourse.orders[i].branch_office_code, statusBranchOffice);
+        }
+      }
+
+      await this.commonService.updateUserStatus(existingCourse.operator.id, status);
+      await this.commonService.updatePropaneTruckStatus(existingCourse.propane_truck.id, status);
+
+      await this.courseRepository.remove(existingCourse);
+
+      console.log(`==============DERROTERO ${id} ELIMINADO=============`);
+
+      return ResponseUtil.success(
+        200,
+        'Derrotero eliminado exitosamente'
+      );
+    } catch (error) {
+      console.log(error);
+
+      return ResponseUtil.error(
+        500,
+        'Error al eliminar el Derrotero'
+      );
+    }
+  }
+
+  //////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  async deleteOnReasign(id: string): Promise<any> {
+    try {
+      const existingCourse = await this.courseRepository.findOne({
+        where: { id },
         relations: ['operator', 'propane_truck', 'orders']
       });
 
@@ -293,7 +344,6 @@ export class CoursesService {
         return ResponseUtil.error(404, 'Derrotero no encontrado');
       }
 
-      console.log(`==============DERROTERO ${id} ELIMINADO=============`);
 
       await this.courseRepository.remove(existingCourse);
 
@@ -301,11 +351,10 @@ export class CoursesService {
         'status': 'DISPONIBLE'
       }
 
-      for (let i = 0; i < existingCourse.orders.length; i++) {
-        await this.commonService.updateOrder(existingCourse.orders[i].id, status);
-      }
       await this.commonService.updateUserStatus(existingCourse.operator.id, status);
       await this.commonService.updatePropaneTruckStatus(existingCourse.propane_truck.id, status);
+
+      console.log(`==============DERROTERO ${id} ELIMINADO=============`);
 
       return ResponseUtil.success(
         200,

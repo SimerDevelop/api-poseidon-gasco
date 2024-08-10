@@ -149,6 +149,7 @@ export class CommonService {
             const existingOrderData = await this.orderRepository.findOne({
                 where: [
                     { id: id },
+                    { folio: id }
                 ]
             });
 

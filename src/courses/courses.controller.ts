@@ -43,4 +43,11 @@ export class CoursesController {
     return this.coursesService.delete(id);
   }
 
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  @Delete('delete-on-reasign/:id')
+  async deleteOnReasign(@Param('id') id: string): Promise<any> {
+    return this.coursesService.deleteOnReasign(id);
+  }
+
 }

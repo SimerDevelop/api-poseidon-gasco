@@ -125,6 +125,7 @@ export class BranchOfficesService {
           tank_stock: stationary_tanks.length,
           stationary_tanks: stationary_tanks,
           geofence: JSON.stringify(geofence),
+          general_ticket: false,
         });
 
         const createdBranchOffice = await this.branchOfficeRepository.save(newBranchOffice);
