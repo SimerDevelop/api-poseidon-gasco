@@ -59,7 +59,13 @@ export class BranchOfficesService {
         });
 
         if (existingBranchOffice) {
-          return ResponseUtil.error(400, 'La sucursal ya existe');
+          const updatedBranchOffice = await this.update(existingBranchOffice.id, branchOfficeData);
+          
+          return ResponseUtil.success(
+            200,
+            'Establecimiento actualizado exitosamente',
+            updatedBranchOffice
+          );
         }
 
         const city = await this.cityRepository
@@ -276,10 +282,12 @@ export class BranchOfficesService {
   }
 
   async update(id, branchOfficeData) {
-    console.log('branchOfficeData', branchOfficeData);
     try {
       const existingBranchOffice = await this.branchOfficeRepository.findOne({
-        where: { id },
+        where: [
+          { id: id },
+          { nit: id }
+        ],
         relations: [
           'city',
           'city.department',
@@ -299,25 +307,55 @@ export class BranchOfficesService {
         )
       }
 
-      const city = await this.cityRepository.findByIds(
-        branchOfficeData.city
-      );
+      const city = await this.cityRepository
+        .createQueryBuilder("cities")
+        .where("cities.id = :cityId OR cities.name = :cityName", {
+          cityId: branchOfficeData.city,
+          cityName: branchOfficeData.city
+        })
+        .getMany();
+      if (city.length < 1) {
+        return ResponseUtil.error(400, 'La ciudad no existe');
+      }
 
-      const zone = await this.zoneRepository.findByIds(
-        branchOfficeData.zone
-      );
+      const zone = await this.zoneRepository
+        .createQueryBuilder("zones")
+        .where("zones.id = :zoneId OR zones.name = :zoneName", {
+          zoneId: branchOfficeData.zone,
+          zoneName: branchOfficeData.zone
+        })
+        .getMany();
+      if (zone.length < 1) {
+        return ResponseUtil.error(400, 'La zona no existe');
+      }
 
-      const factor = await this.factorRepository.findByIds(
-        branchOfficeData.factor
-      );
+      const client = await this.clientRepository
+        .createQueryBuilder("clients")
+        .where("clients.id = :clientId OR clients.cc = :clientCc", {
+          clientId: branchOfficeData.client,
+          clientCc: branchOfficeData.client
+        })
+        .getMany();
+      if (client.length < 1) {
+        return ResponseUtil.error(400, 'El cliente no existe');
+      }
 
-      const client = await this.clientRepository.findByIds(
-        branchOfficeData.client
-      );
 
-      const stationary_tanks = await this.stationaryTankRepository.findByIds(
-        branchOfficeData.stationary_tanks
-      );
+      const stationary_tanks = await this.stationaryTankRepository
+        .createQueryBuilder("stationary_tanks")
+        .where("stationary_tanks.id IN (:...ids) OR stationary_tanks.serial IN (:...serials)", {
+          ids: branchOfficeData.stationary_tanks,
+          serials: branchOfficeData.stationary_tanks
+        })
+        .getMany();
+      if (stationary_tanks.length < 1) {
+        return ResponseUtil.error(400, 'Los tanques estacionarios no existen');
+      }
+
+      // Busca el primer factor en la base de datos
+      const factor = await this.factorRepository.find();
+
+      const geofence = this.createGeofence(parseFloat(branchOfficeData.latitude), parseFloat(branchOfficeData.longitude));
 
       const updatedBranchOffice = await this.branchOfficeRepository.save({
         ...existingBranchOffice,
@@ -327,7 +365,8 @@ export class BranchOfficesService {
         zone: zone,
         factor: factor,
         client: client,
-        stationary_tanks: stationary_tanks
+        stationary_tanks: stationary_tanks,
+        geofence: JSON.stringify(geofence),
       });
 
       if (updatedBranchOffice) {
@@ -370,8 +409,8 @@ export class BranchOfficesService {
         ]
       });
 
-      console.log('Establecimiento encontrado::',existingBranchOffice);
-      
+      console.log('Establecimiento encontrado::', existingBranchOffice);
+
 
       if (!existingBranchOffice) {
         return ResponseUtil.error(404, 'Sucursal no encontrada');

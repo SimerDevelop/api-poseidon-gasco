@@ -16,17 +16,29 @@ export class ClientsService {
 
   async create(clientData: Client): Promise<any> {
     try {
-
-      console.log(clientData);
-
-
       const existingClient = await this.clientRepository.findOne({
         where: { cc: clientData.cc },
       });
 
       if (existingClient) {
-        return ResponseUtil.error(
-          400, 'El cliente ya existe'
+        const occupation = await this.occupationRepository
+        .createQueryBuilder("occupation")
+        .where("occupation.id = :occupationId OR occupation.name = :occupationName", {
+          occupationId: clientData.occupation,
+          occupationName: clientData.occupation
+        })
+        .getMany();
+        
+        const updatedClient = await this.clientRepository.save({
+          ...existingClient,
+          ...clientData,
+          occupation: occupation
+        });
+
+        return ResponseUtil.success(
+          200,
+          'Cliente actualizado exitosamente',
+          updatedClient
         );
       }
 

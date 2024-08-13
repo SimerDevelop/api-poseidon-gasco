@@ -232,6 +232,16 @@ export class CoursesService {
       });
 
       if (updatedCourse) {
+        const status = {
+          'status': 'EN CURSO'
+        }
+
+        for (let i = 0; i < orders.length; i++) {
+          await this.commonService.updateOrder(orders[i].id, status);
+        }
+      }
+
+      if (updatedCourse) {
         return ResponseUtil.success(
           200,
           'Derrotero actualizado exitosamente',
