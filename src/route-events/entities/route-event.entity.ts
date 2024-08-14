@@ -1,21 +1,24 @@
 import { Column, CreateDateColumn, Entity, PrimaryColumn, UpdateDateColumn } from "typeorm";
 
-@Entity('stationary-tank')
-export class StationaryTank {
+@Entity('route-events')
+export class RouteEvent {
     @PrimaryColumn('uuid')
     id: string;
 
     @Column()
-    state: string;
+    name: string;
 
     @Column()
-    status: string;
+    description: string;
 
-    @Column({ nullable: false })
-    serial: string;
+    @Column()
+    criticality: number;
 
-    @Column({ nullable: false })
-    capacity: number;
+    @Column()
+    code_event: string;
+
+    @Column()
+    state: string;
 
     @CreateDateColumn()
     create: Date;

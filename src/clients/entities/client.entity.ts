@@ -8,22 +8,22 @@ export class Client {
     @PrimaryColumn('uuid')
     id: string;
 
-    @Column({ default: '' })
+    @Column({ default: '', nullable: false })
     state: string;
 
-    @Column({ default: '' })
+    @Column({ default: '', nullable: false })
     firstName: string;
 
-    @Column({ default: '' })
+    @Column({ default: '', nullable: false })
     lastName: string;
 
-    @Column({ default: '' })
+    @Column({ default: '', nullable: false })
     cc: string;
 
-    @Column({ default: '' })
+    @Column({ default: '', nullable: false })
     phone: string;
 
-    @Column({ default: '' })
+    @Column({ default: '', nullable: false })
     email: string;
 
     @ManyToMany(() => Occupation, { cascade: true })

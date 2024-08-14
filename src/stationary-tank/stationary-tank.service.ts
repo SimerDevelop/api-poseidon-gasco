@@ -14,31 +14,37 @@ export class StationaryTankService {
   async create(stationaryTankData: StationaryTank): Promise<any> {
     try {
 
-      const existingPropaneTruck = await this.stationaryTankRepository.findOne({
+      const existingStationaryTank = await this.stationaryTankRepository.findOne({
         where: { serial: stationaryTankData.serial },
       });
 
-      if (existingPropaneTruck) {
-        return ResponseUtil.error(
-          400,
-          'El Tanque estacionario ya existe'
+      if (existingStationaryTank) {
+        const updatedStationaryTank = await this.stationaryTankRepository.save({
+          ...existingStationaryTank,
+          ...stationaryTankData,
+        });
+
+        return ResponseUtil.success(
+          200,
+          'Tanque estacionario actualizado exitosamente',
+          updatedStationaryTank
         );
       }
 
       if (stationaryTankData) {
-        const newPropaneTruck = this.stationaryTankRepository.create({
+        const newStationaryTank = this.stationaryTankRepository.create({
           ...stationaryTankData,
           id: uuidv4(), // Generar un nuevo UUID
           state: 'ACTIVO',
           status: 'NO ASIGNADO',
         });
-        const createdPropaneTruck = await this.stationaryTankRepository.save(newPropaneTruck);
+        const createdStationaryTank = await this.stationaryTankRepository.save(newStationaryTank);
 
-        if (createdPropaneTruck) {
+        if (createdStationaryTank) {
           return ResponseUtil.success(
             200,
             'Tanque estacionario creado exitosamente',
-            createdPropaneTruck
+            createdStationaryTank
           );
         } else {
           return ResponseUtil.error(
@@ -269,37 +275,25 @@ export class StationaryTankService {
   }
 
   async createMultiple(data: any): Promise<any> {
-    const createdIds = []; // Array para almacenar los IDs de las sucursales creadas
+    const chunkSize = 500;
+    const createdStationaryTanks = [];
 
-    console.log('==============DATOS DE TANQUES ESTACIONARIOS=============');
-    console.log(data);
-    console.log('=========================================================');
+    for (let i = 0; i < data.length; i += chunkSize) {
+      const chunk = data.slice(i, i + chunkSize);
+      const promises = chunk.map((item: any) => this.create(item));
+      const responses = await Promise.all(promises);
 
+      const successfulStationaryTanks = responses
+        .filter(response => response.statusCode === 200)
+        .map(response => response.data.id);
 
-    for (let i = 0; i < data.length; i++) {
-      await new Promise(resolve => setTimeout(resolve, 500)); // Espera 1 segundo
-      const response = await this.create(data[i]);
-      console.log('==============RESPONSE=============');
-      console.log(response);
-      console.log('===================================');
-
-
-      if (response.statusCode === 200) {
-        createdIds.push(response.data.id);
-      }
-    }
-
-    if (createdIds.length < 1) {
-      return ResponseUtil.error(
-        500,
-        'Ha ocurrido un problema al crear los Tanques estacionarios'
-      );
+      createdStationaryTanks.push(...successfulStationaryTanks);
     }
 
     return ResponseUtil.success(
       200,
       'Tanques estacionarios creados exitosamente',
-      createdIds
+      createdStationaryTanks
     );
   }
 

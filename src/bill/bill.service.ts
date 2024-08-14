@@ -115,7 +115,7 @@ export class BillService {
       const fechaInicialMoment = moment(fechaInicial, 'YYYY-MM-DD HH:mm:ss');
       const fechaFinalMoment = moment(fechaFinal, 'YYYY-MM-DD HH:mm:ss');
 
-      const duration = Math.abs(fechaFinalMoment.diff(fechaInicialMoment));      
+      const duration = Math.abs(fechaFinalMoment.diff(fechaInicialMoment));     
 
       const service_time = msToTime(duration);
 

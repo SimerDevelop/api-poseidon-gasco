@@ -10,43 +10,43 @@ export class BranchOffices {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
-    @Column()
+    @Column({ nullable: false })
     name: string;
 
-    @Column()
+    @Column({ nullable: false })
     nit: string;
 
-    @Column()
+    @Column({ nullable: false })
     branch_office_code: number;
 
-    @Column()
+    @Column({ nullable: false })
     address: string;
 
-    @Column()
+    @Column({ nullable: false })
     latitude: string;
 
-    @Column()
+    @Column({ nullable: false })
     longitude: string;
 
-    @Column()
+    @Column({ nullable: false })
     state: string;
 
-    @Column()
+    @Column({ nullable: false })
     status: string;
 
-    @Column()
+    @Column({ nullable: false })
     phone: string;
 
-    @Column()
+    @Column({ nullable: false })
     email: string;
 
-    @Column()
+    @Column({ nullable: false })
     kilogramValue: number;
 
-    @Column()
+    @Column({ nullable: false })
     tank_stock: number;
 
-    @Column()
+    @Column({ nullable: false })
     general_ticket: boolean;
 
     @Column({ type: 'text' })

@@ -23,6 +23,7 @@ import { TabletModule } from './tablet/tablet.module';
 import { StationaryTankModule } from './stationary-tank/stationary-tank.module';
 import { OrdersModule } from './orders/orders.module';
 import { RequestModule } from './request/request.module';
+import { RouteEventsModule } from './route-events/route-events.module';
 
 @Module({
   imports: [
@@ -57,6 +58,7 @@ import { RequestModule } from './request/request.module';
     StationaryTankModule,
     OrdersModule,
     RequestModule,
+    RouteEventsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
