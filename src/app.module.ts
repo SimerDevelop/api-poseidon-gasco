@@ -24,6 +24,7 @@ import { StationaryTankModule } from './stationary-tank/stationary-tank.module';
 import { OrdersModule } from './orders/orders.module';
 import { RequestModule } from './request/request.module';
 import { RouteEventsModule } from './route-events/route-events.module';
+import { LogReportModule } from './log-report/log-report.module';
 
 @Module({
   imports: [
@@ -59,6 +60,7 @@ import { RouteEventsModule } from './route-events/route-events.module';
     OrdersModule,
     RequestModule,
     RouteEventsModule,
+    LogReportModule,
   ],
   controllers: [AppController],
   providers: [AppService],

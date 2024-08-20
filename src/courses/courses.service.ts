@@ -124,24 +124,24 @@ export class CoursesService {
     }
   }
 
-  async findOne(id: string) {
+  async findOne(id: string) {    
     try {
-      const course = await this.courseRepository.findOne({
-        where: { id },
-        relations: [
-          'operator',
-          'propane_truck',
-          'orders',
-          'orders.branch_office',
-          'orders.branch_office.client',
-          'orders.branch_office.client.occupation',
-          'orders.branch_office.city',
-          'orders.branch_office.city.department',
-          'orders.branch_office.zone',
-          'orders.branch_office.factor'
-        ],
-      });
-
+      const course = await this.courseRepository
+      .createQueryBuilder('courses')
+      .leftJoinAndSelect('courses.operator', 'operator')
+      .leftJoinAndSelect('courses.orders', 'orders')
+      .leftJoinAndSelect('courses.propane_truck', 'propane_truck')
+      .leftJoinAndSelect('orders.branch_office', 'branch_office')
+      .leftJoinAndSelect('branch_office.city', 'city')
+      .leftJoinAndSelect('city.department', 'department')
+      .leftJoinAndSelect('branch_office.client', 'client')
+      .leftJoinAndSelect('client.occupation', 'occupation')
+      .leftJoinAndSelect('branch_office.factor', 'factor')
+      .leftJoinAndSelect('branch_office.zone', 'zone')
+      .leftJoinAndSelect('branch_office.stationary_tanks', 'stationary_tanks')
+      .where('courses.id = :id', { id })
+      .getOne();
+      
       if (course) {
         this.commonService.findCoursesByOperatorNameAndLastName(course.operator.firstName, course.operator.lastName);
 
@@ -166,8 +166,6 @@ export class CoursesService {
 
   async findCourseByOperatorId(operatorId: string) {
     try {
-      console.log(operatorId);
-
       const courses = await this.courseRepository
         .createQueryBuilder('courses')
         .leftJoinAndSelect('courses.operator', 'operator')
@@ -182,9 +180,12 @@ export class CoursesService {
         .leftJoinAndSelect('branch_office.zone', 'zone')
         .leftJoinAndSelect('branch_office.stationary_tanks', 'stationary_tanks')
         .where('operator.id = :operatorId', { operatorId })
-        .getOne();
+        .orderBy('courses.id', 'DESC') // Ordena los resultados por el campo 'id' en orden descendente
+        .getOne(); // Obtiene el primer resultado
 
       console.log('=====================DERROTERO CONSULTADO=====================');
+      console.log("operario: ", operatorId);
+      console.log("______________________________");
       console.log(courses);
       console.log('==============================================================');
 

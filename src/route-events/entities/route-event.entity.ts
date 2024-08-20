@@ -12,10 +12,13 @@ export class RouteEvent {
     description: string;
 
     @Column()
+    suggestion: string;
+
+    @Column()
     criticality: number;
 
     @Column()
-    code_event: string;
+    code_event: number;
 
     @Column()
     state: string;

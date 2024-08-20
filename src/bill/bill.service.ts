@@ -16,6 +16,8 @@ import { CommonService } from 'src/common-services/common.service';
 import { RequestService } from 'src/request/request.service';
 import { Request } from 'src/request/entities/request.entity';
 import * as moment from 'moment-timezone';
+import { LogReportService } from 'src/log-report/log-report.service';
+import { LogReport } from 'src/log-report/entities/log-report.entity';
 
 function transformDate(dateStr) {
   const [day, month, year] = dateStr.split('/');
@@ -32,10 +34,12 @@ export class BillService {
     @InjectRepository(Client) private clientRepository: Repository<Client>,
     @InjectRepository(Request) private requestRepository: Repository<Request>,
     @InjectRepository(Notification) private notificationRepository: Repository<Notification>,
+    @InjectRepository(LogReport) private logReportRepository: Repository<LogReport>,
     @Inject(NotificationsService) private notificationsService: NotificationsService,
     @Inject(UsuariosService) private userService: UsuariosService,
     private commonService: CommonService,
-    private requestService: RequestService
+    private requestService: RequestService,
+    private logReportService: LogReportService
   ) { }
 
   async create(billData: Bill): Promise<any> {
@@ -46,6 +50,24 @@ export class BillService {
 
     try {
       const userId = billData.operator.toString();
+
+      if (billData.charge.masaTotal <= 0) {
+        let data = {
+          code_event: 1,
+          userId: userId,
+        }
+
+        const logReport = this.logReportRepository.create({
+          ...data
+        });
+
+        await this.logReportService.create(logReport);
+        
+        return ResponseUtil.error(
+          401,
+          'La masa no puede ser menor o igual a 0, se ha creado un informe de error',
+        );
+      }
 
       const existingUser = await this.userService.findUserById(userId);
 

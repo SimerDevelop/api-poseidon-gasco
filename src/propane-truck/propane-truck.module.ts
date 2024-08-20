@@ -13,5 +13,6 @@ import { CommonModule } from 'src/common-services/common.module';
   ],
   controllers: [PropaneTruckController],
   providers: [PropaneTruckService],
+  exports: [PropaneTruckService]
 })
 export class PropaneTruckModule {}

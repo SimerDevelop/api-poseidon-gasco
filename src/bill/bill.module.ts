@@ -22,6 +22,12 @@ import { Order } from 'src/orders/entities/order.entity';
 import { RequestModule } from 'src/request/request.module';
 import { RequestService } from 'src/request/request.service';
 import { Request } from 'src/request/entities/request.entity';
+import { LogReportModule } from 'src/log-report/log-report.module';
+import { LogReportService } from 'src/log-report/log-report.service';
+import { LogReport } from 'src/log-report/entities/log-report.entity';
+import { RouteEventsModule } from 'src/route-events/route-events.module';
+import { RouteEvent } from 'src/route-events/entities/route-event.entity';
+import { PropaneTruckModule } from 'src/propane-truck/propane-truck.module';
 
 @Module({
   imports: [
@@ -37,12 +43,17 @@ import { Request } from 'src/request/entities/request.entity';
       Course,
       PropaneTruck,
       Order,
-      Request
+      Request,
+      LogReport,
+      RouteEvent
     ]),
     CommonModule,
-    RequestModule
+    RequestModule,
+    LogReportModule,
+    RouteEventsModule,
+    PropaneTruckModule
   ],
   controllers: [BillController],
-  providers: [BillService, NotificationsService, UsuariosService, StationaryTankService, CommonService, RequestService]
+  providers: [BillService, NotificationsService, UsuariosService, StationaryTankService, CommonService, RequestService, LogReportService]
 })
 export class BillModule { }

@@ -39,17 +39,6 @@ export class OrdersService {
         }
       }
 
-      // const existingOrder = await this.orderRepository.findOne({
-      //   where: { branch_office_code: orderData.branch_office_code },
-      // });
-
-      // if (existingOrder) {
-      //   return ResponseUtil.error(
-      //     400,
-      //     'Ya existe un Pedido con el mismo código de sucursal'
-      //   );
-      // }
-
       const branch_office = await this.branchOfficeRepository.findOne({
         where: { branch_office_code: orderData.branch_office_code },
         relations: ['client'],

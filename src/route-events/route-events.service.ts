@@ -14,11 +14,23 @@ export class RouteEventsService {
   async create(routeEventData: RouteEvent): Promise<any> {
     try {
       if (routeEventData) {
+        const existingRouteEvent = await this.routeEventRepository.findOne({
+          where: [
+            { name: routeEventData.name },
+            { code_event: routeEventData.code_event }
+          ]
+        });
+
+        if (existingRouteEvent) {
+          return ResponseUtil.error(400, 'El Evento de ruta ya existe');
+        }
+
         const newRouteEvent = this.routeEventRepository.create({
           ...routeEventData,
           id: uuidv4(), // Generar un nuevo UUID
           state: 'ACTIVO'
         });
+
         const createdRouteEvent = await this.routeEventRepository.save(newRouteEvent);
 
         if (createdRouteEvent) {

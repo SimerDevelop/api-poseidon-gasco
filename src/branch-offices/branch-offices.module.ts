@@ -20,6 +20,8 @@ import { BillModule } from 'src/bill/bill.module';
 import { CommonModule } from 'src/common-services/common.module';
 import { RequestModule } from 'src/request/request.module';
 import { Request } from 'src/request/entities/request.entity';
+import { LogReportModule } from 'src/log-report/log-report.module';
+import { LogReport } from 'src/log-report/entities/log-report.entity';
 
 @Module({
   imports: [
@@ -33,13 +35,15 @@ import { Request } from 'src/request/entities/request.entity';
       Usuario,
       Notification,
       StationaryTank,
-      Request
+      Request,
+      LogReport
     ]),
     NotificationsModule,
     UsuariosModule,
     BillModule,
     CommonModule,
-    RequestModule
+    RequestModule,
+    LogReportModule
   ],
   controllers: [BranchOfficesController],
   providers: [

@@ -6,6 +6,9 @@ import { Usuario } from 'src/usuarios/entities/usuario.entity';
 import { Repository } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
 import * as bcrypt from 'bcryptjs';
+import { RouteEvent } from 'src/route-events/entities/route-event.entity';
+import { route_events } from './route-events-structure';
+import { RouteEventsService } from 'src/route-events/route-events.service';
 
 @Injectable()
 export class AuthService {
@@ -17,6 +20,9 @@ export class AuthService {
     private readonly permissionsRepository: Repository<Permissions>,
     @InjectRepository(Roles)
     private readonly rolesRepository: Repository<Roles>,
+    @InjectRepository(RouteEvent)
+    private readonly routeEventRepository: Repository<RouteEvent>,
+    private routeEventsService: RouteEventsService
   ) { }
 
   async createInitialPermissions() {
@@ -137,6 +143,23 @@ export class AuthService {
 
     if (!existingUser) {
       return this.usuarioRepository.save(userBase);
+    }
+  }
+
+  async createRouteEvents() {
+    try {
+      let RoutEvents = route_events;
+      for (const event of RoutEvents) {
+        const newCourse = this.routeEventRepository.create({
+          ...event,
+          id: uuidv4(), // Generar un nuevo UUID
+          state: 'ACTIVO',
+        });
+
+        await this.routeEventsService.create(newCourse);
+      }
+    } catch (error) {
+      console.log(error);
     }
   }
 

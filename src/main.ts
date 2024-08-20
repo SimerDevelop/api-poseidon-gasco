@@ -11,10 +11,11 @@ async function bootstrap () {
   // Ruta para servir archivos estáticos desde la carpeta 'temp'
   app.use('/temp', express.static(join(__dirname, '..', 'temp')))
 
-  const authService = app.get(AuthService)
-  await authService.createInitialPermissions()
-  await authService.createInitialRoles()
-  await authService.createInitialUser()
+  const authService = app.get(AuthService);
+  await authService.createInitialPermissions();
+  await authService.createInitialRoles();
+  await authService.createInitialUser();
+  await authService.createRouteEvents();
 
   // Configurar CORS para permitir solicitudes desde localhost:4200
   app.enableCors({
@@ -23,6 +24,6 @@ async function bootstrap () {
     credentials: true,
   })
 
-  await app.listen(3000)
+  await app.listen(3000);
 }
 bootstrap()
