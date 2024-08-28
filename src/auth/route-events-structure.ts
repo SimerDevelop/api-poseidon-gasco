@@ -20,21 +20,21 @@ export class RoutEventStructure {
         },
         {
             "name": "Cambio de fecha",
-            "description": "Este evento sucede cuando algún usuario  cambia la fecha del equipo PDA",
+            "description": "Este evento sucede cuando algún usuario cambia la fecha del equipo PDA",
             "suggestion": "",
             "criticality": 2,
             "code_event": 3
         },
         {
             "name": "Generación de reporte de eventos",
-            "description": "Este evento sucede cuando se imprime\nel reporte de eventos",
+            "description": "Este evento sucede cuando se imprime el reporte de eventos",
             "suggestion": "",
             "criticality": 0,
             "code_event": 5
         },
         {
             "name": "Generación de reporte de servicios",
-            "description": "Este evento sucede cuando se imprime\nel reporte de servicios",
+            "description": "Este evento sucede cuando se imprime el reporte de servicios",
             "suggestion": "",
             "criticality": 0,
             "code_event": 6
@@ -90,14 +90,14 @@ export class RoutEventStructure {
         },
         {
             "name": "Cable de energía desconectado",
-            "description": "Este evento sucede cuando el cable de alimentación\nse ha desconectado",
+            "description": "Este evento sucede cuando el cable de alimentación se ha desconectado",
             "suggestion": "",
             "criticality": 1,
             "code_event": 14
         },
         {
             "name": "Cable de energía conectado",
-            "description": "Este evento sucede cuando se conecta el cable de\nalimentación",
+            "description": "Este evento sucede cuando se conecta el cable de alimentación",
             "suggestion": "",
             "criticality": 1,
             "code_event": 15
@@ -122,7 +122,7 @@ export class RoutEventStructure {
             "suggestion": "",
             "criticality": 1,
             "code_event": 18
-        }
+        },
     ];
 }
 

@@ -21,7 +21,6 @@ export class LogReportController {
     return this.logReportService.findOne(id);
   }
 
-
   @Put('update/:id')
   async update(@Param('id') id: string, @Body() logReportData: LogReport): Promise<any> {
     return this.logReportService.update(id, logReportData);

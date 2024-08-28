@@ -61,11 +61,12 @@ export class BillService {
           ...data
         });
 
-        await this.logReportService.create(logReport);
+        const createdLogReport = await this.logReportService.create(logReport);
         
         return ResponseUtil.error(
           401,
           'La masa no puede ser menor o igual a 0, se ha creado un informe de error',
+          createdLogReport
         );
       }
 
@@ -81,13 +82,29 @@ export class BillService {
         .createQueryBuilder("bill")
         .where("JSON_EXTRACT(bill.charge, '$.fechaInicial') = :fechaInicial", { fechaInicial: billData.charge.fechaInicial })
         .andWhere("JSON_EXTRACT(bill.charge, '$.horaInicial') = :horaInicial", { horaInicial: billData.charge.horaInicial })
+        .andWhere("JSON_EXTRACT(bill.charge, '$.masaTotal') = :masaTotal", { masaTotal: billData.charge.masaTotal })
         .getOne();
 
       if (existingBill) {
-        const response = ResponseUtil.error(400, 'La factura ya existe');
+        let data = {
+          code_event: 18,
+          userId: userId,
+        }
+
+        const logReport = this.logReportRepository.create({
+          ...data
+        });
+
+        const createdLogReport = await this.logReportService.create(logReport);
+        
         console.log('===================== FACTURA EXISTENTE ========================');
-        console.log(response);
-        return response;
+        console.log(createdLogReport);
+        
+        return ResponseUtil.error(
+          401,
+          'Ya existe una factura con los mismos datos, se ha creado un informe de error',
+          createdLogReport
+          );
       }
 
       // Generación de código Unico para la factura

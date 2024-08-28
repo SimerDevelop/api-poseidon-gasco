@@ -44,4 +44,9 @@ export class PropaneTruckController {
   async updateStatus(@Param('id') id: string, @Body() propaneTruckData: PropaneTruck): Promise<any> {
     return this.propaneTruckService.updateStatus(id, propaneTruckData);
   }
+
+  @Post('createMultiple')
+  async createMultiple(@Body() propaneTruckData: PropaneTruck): Promise<PropaneTruck> {
+      return this.propaneTruckService.createMultiple(propaneTruckData);
+  }
 }

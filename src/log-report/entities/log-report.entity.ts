@@ -22,10 +22,8 @@ export class LogReport {
     @ManyToOne(() => Usuario, { cascade: true })
     user: Usuario;
 
-    @Column({ nullable: true, type: 'json'})
+    @Column('json') 
     propane_truck: any;
-
-    @Column('json')
 
     @CreateDateColumn()
     create: Date;

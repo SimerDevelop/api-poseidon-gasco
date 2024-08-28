@@ -272,4 +272,27 @@ export class OrdersService {
     }
   }
 
+  async createMultiple(data: any): Promise<any> {
+    const chunkSize = 500;
+    const createdOrders = [];
+
+    for (let i = 0; i < data.length; i += chunkSize) {
+      const chunk = data.slice(i, i + chunkSize);
+
+      for (const item of chunk) {
+        const response = await this.create(item);
+
+        if (response.statusCode === 200) {
+          createdOrders.push(response.data.id);
+        }
+      }
+    }
+
+    return ResponseUtil.success(
+      200,
+      'Pedidos creados exitosamente',
+      createdOrders
+    );
+  }
+
 }

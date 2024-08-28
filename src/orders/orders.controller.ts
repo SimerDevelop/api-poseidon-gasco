@@ -44,4 +44,9 @@ export class OrdersController {
   async delete(@Param('id') id: string): Promise<any> {
     return this.ordersService.delete(id);
   }
+
+  @Post('createMultiple')
+  async createMultiple(@Body() orderData: Order): Promise<Order> {
+      return this.ordersService.createMultiple(orderData);
+  }
 }

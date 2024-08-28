@@ -13,16 +13,6 @@ export class UsuariosController {
     return this.usuariosService.findAll();
   }
 
-  @Get('all/available/operators')
-  async findAvaiableOperators(): Promise<Usuario[]> {
-    return this.usuariosService.findAvaiableOperators();
-  }
-
-  @Get('all/operators')
-  async findAllOperators(): Promise<Usuario[]> {
-    return this.usuariosService.findAllOperators();
-  }
-
   @Get('getById/:id')
   async findUserById(@Param('id') id: string): Promise<any> {
     return this.usuariosService.findUserById(id);
@@ -38,24 +28,36 @@ export class UsuariosController {
     return this.usuariosService.updateUserById(id, userData);
   }
 
-  @Post('login')
-  async loginUser(@Body() loginData: { credentials: string; password: string }): Promise<any> {
-    console.log('===================USUARIO LOGIN=====================');
-    console.log(loginData);
-    console.log('=====================================================');
-    
-    const { credentials, password } = loginData;    
-    return this.usuariosService.loginUser(credentials, password);
-  }
-
   @Delete('delete/:id')
   async deleteUser(@Param('id') id: string): Promise<any> {
     return this.usuariosService.deleteUserById(id);
   }
 
+  ////////////////////////////////////////////////////////////////////////////////////////
+
   @Delete('activate/:id')
   async activateUserById(@Param('id') id: string): Promise<any> {
     return this.usuariosService.activateUserById(id);
+  }
+
+  @Get('all/available/operators')
+  async findAvaiableOperators(): Promise<Usuario[]> {
+    return this.usuariosService.findAvaiableOperators();
+  }
+
+  @Get('all/operators')
+  async findAllOperators(): Promise<Usuario[]> {
+    return this.usuariosService.findAllOperators();
+  }
+  @Post('login')
+  async loginUser(@Body() loginData: { credentials: string; password: string }): Promise<any> {
+    const { credentials, password } = loginData;    
+    return this.usuariosService.loginUser(credentials, password);
+  }
+
+  @Post('createMultiple')
+  async createMultiple(@Body() userData: Usuario): Promise<Usuario> {
+      return this.usuariosService.createMultiple(userData);
   }
 }
 

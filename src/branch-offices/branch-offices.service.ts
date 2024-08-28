@@ -653,7 +653,7 @@ export class BranchOfficesService {
 
         const successfulBranchOffices = responses
           .filter(response => response.statusCode === 200)
-          .map(response => response.data.id);
+          .map(response => response.data.branch_office_code);
 
         createdBranchOffices.push(...successfulBranchOffices);
       }

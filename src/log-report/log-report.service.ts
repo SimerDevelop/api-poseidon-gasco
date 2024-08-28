@@ -18,16 +18,18 @@ export class LogReportService {
   ) { }
 
   async create(logReportData: LogReport): Promise<any> {    
-    try {
+    try {      
       if (logReportData) {
         const route_event = await this.routeEventRepository.findOne({
           where: { code_event: logReportData.code_event },
         });
-
+        
         const user = await this.usuariosRepository.findOne({
           where: { id: logReportData.userId },
           relations: ['role'],
         });
+
+        console.log(logReportData.userId);
         
         let propaneTruck = {
           data: [

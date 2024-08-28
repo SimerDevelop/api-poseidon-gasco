@@ -266,4 +266,27 @@ export class PropaneTruckService {
     }
   }
 
+  async createMultiple(data: any): Promise<any> {
+    const chunkSize = 500;
+    const createdPropaneTrucks = [];
+
+    for (let i = 0; i < data.length; i += chunkSize) {
+      const chunk = data.slice(i, i + chunkSize);
+      const promises = chunk.map((item: any) => this.create(item));
+      const responses = await Promise.all(promises);
+
+      const successfulPropaneTrucks = responses
+        .filter(response => response.statusCode === 200)
+        .map(response => response.data.plate);
+
+      createdPropaneTrucks.push(...successfulPropaneTrucks);
+    }
+
+    return ResponseUtil.success(
+      200,
+      'Auto Tanques creados exitosamente',
+      createdPropaneTrucks
+    );
+  }
+
 }

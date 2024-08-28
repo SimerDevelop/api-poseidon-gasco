@@ -88,6 +88,10 @@ export class UsuariosService {
       // Generar un token de acceso
       const accessToken = jwt.sign({ userId: user.id, key: 'poseidon-gasco.9010' }, 'poseidon', { expiresIn: '1h' });
 
+      console.log('====================================Usuario logueado====================================');
+      console.log(user);
+      console.log('========================================================================================');
+
       return ResponseUtil.success(
         200,
         'Inicio de sesión exitoso',
@@ -322,6 +326,32 @@ export class UsuariosService {
         'Error al actualizar el usuario'
       );
     }
+  }
+
+  ///////////////////////////////////////////////////////////////////////////
+
+
+  async createMultiple(data: any): Promise<any> {
+    const chunkSize = 500;
+    const createdUsers = [];
+
+    for (let i = 0; i < data.length; i += chunkSize) {
+      const chunk = data.slice(i, i + chunkSize);
+      const promises = chunk.map((item: any) => this.createUser(item));
+      const responses = await Promise.all(promises);
+
+      const successfulUsers = responses
+        .filter(response => response.statusCode === 200)
+        .map(response => response.data.id);
+
+      createdUsers.push(...successfulUsers);
+    }
+
+    return ResponseUtil.success(
+      200,
+      'Usuarios creados exitosamente',
+      createdUsers
+    );
   }
 }
 
