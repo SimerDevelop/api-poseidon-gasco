@@ -30,4 +30,11 @@ export class LogReportController {
   async remove(@Param('id') id: string): Promise<any> {
     return this.logReportService.remove(id);
   }
+
+  ////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  @Get('findByDay')
+  async findByDay(): Promise<LogReport[]> {
+    return this.logReportService.findByDay();
+  }
 }

@@ -9,7 +9,7 @@ export class Usuario {
   @Column()
   state: string;
 
-  @Column()
+  @Column({ default: '' })
   status: string;
 
   @Column()

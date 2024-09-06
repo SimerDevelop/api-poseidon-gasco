@@ -43,10 +43,13 @@ export class BillService {
   ) { }
 
   async create(billData: Bill): Promise<any> {
-
     console.log('==================BillData===================');
     console.log(billData);
     console.log('=============================================');
+
+    const queryRunner = this.billRepository.manager.connection.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
     try {
       const userId = billData.operator.toString();
@@ -55,14 +58,16 @@ export class BillService {
         let data = {
           code_event: 1,
           userId: userId,
-        }
+        };
 
         const logReport = this.logReportRepository.create({
           ...data
         });
 
         const createdLogReport = await this.logReportService.create(logReport);
-        
+
+        await queryRunner.rollbackTransaction();
+
         return ResponseUtil.error(
           401,
           'La masa no puede ser menor o igual a 0, se ha creado un informe de error',
@@ -75,11 +80,13 @@ export class BillService {
       if (existingUser.statusCode != 200) {
         const response = ResponseUtil.error(400, 'Usuario no válido');
         console.log("Usuario inválido");
+        await queryRunner.rollbackTransaction();
         return response;
       }
 
-      const existingBill = await this.billRepository
-        .createQueryBuilder("bill")
+      const existingBill = await queryRunner.manager
+        .createQueryBuilder(Bill, "bill")
+        .setLock("pessimistic_write")
         .where("JSON_EXTRACT(bill.charge, '$.fechaInicial') = :fechaInicial", { fechaInicial: billData.charge.fechaInicial })
         .andWhere("JSON_EXTRACT(bill.charge, '$.horaInicial') = :horaInicial", { horaInicial: billData.charge.horaInicial })
         .andWhere("JSON_EXTRACT(bill.charge, '$.masaTotal') = :masaTotal", { masaTotal: billData.charge.masaTotal })
@@ -89,28 +96,30 @@ export class BillService {
         let data = {
           code_event: 18,
           userId: userId,
-        }
+        };
 
         const logReport = this.logReportRepository.create({
           ...data
         });
 
         const createdLogReport = await this.logReportService.create(logReport);
-        
+
         console.log('===================== FACTURA EXISTENTE ========================');
         console.log(createdLogReport);
-        
+
+        await queryRunner.rollbackTransaction();
+
         return ResponseUtil.error(
           401,
           'Ya existe una factura con los mismos datos, se ha creado un informe de error',
           createdLogReport
-          );
+        );
       }
 
       // Generación de código Unico para la factura
       var bill_code = await this.generateUniqueCode();
 
-      var existing_code = await this.billRepository.findOne({
+      var existing_code = await queryRunner.manager.findOne(Bill, {
         where: {
           bill_code: bill_code
         },
@@ -120,7 +129,7 @@ export class BillService {
         // Generar un nuevo código único
         const new_code = await this.generateUniqueCode();
         // Verificar si ya existe un permiso con el nuevo nombre
-        existing_code = await this.billRepository.findOne({
+        existing_code = await queryRunner.manager.findOne(Bill, {
           where: {
             bill_code: new_code
           },
@@ -132,19 +141,13 @@ export class BillService {
 
       const branchOfficeId = billData.branch_office;
 
-      const branch_office = await this.branchOfficeRepository.findByIds(
-        billData.branch_office
-      );
+      const branch_office = await queryRunner.manager.findByIds(BranchOffices, billData.branch_office);
 
-      const operator = await this.userRepository.findByIds(
-        billData.operator
-      );
+      const operator = await queryRunner.manager.findByIds(Usuario, billData.operator);
 
-      const client = await this.clientRepository.findByIds(
-        billData.client
-      );
+      const client = await queryRunner.manager.findByIds(Client, billData.client);
 
-      const total = branch_office[0].kilogramValue * billData.charge.masaTotal
+      const total = branch_office[0].kilogramValue * billData.charge.masaTotal;
 
       const formattedFecha = formatFecha(billData.charge.fechaInicial, billData.charge.horaInicial);
 
@@ -154,7 +157,7 @@ export class BillService {
       const fechaInicialMoment = moment(fechaInicial, 'YYYY-MM-DD HH:mm:ss');
       const fechaFinalMoment = moment(fechaFinal, 'YYYY-MM-DD HH:mm:ss');
 
-      const duration = Math.abs(fechaFinalMoment.diff(fechaInicialMoment));     
+      const duration = Math.abs(fechaFinalMoment.diff(fechaInicialMoment));
 
       const service_time = msToTime(duration);
 
@@ -185,7 +188,7 @@ export class BillService {
           total: total,
         });
 
-        const createdBill = await this.billRepository.save(newBill);
+        const createdBill = await queryRunner.manager.save(newBill);
 
         console.log('===================== FACTURA CREADA ========================');
         console.log(createdBill);
@@ -202,17 +205,17 @@ export class BillService {
             title: `Nueva remisión en ${createdBill.branch_office_name}`,
             type: "CARGUE",
             intercourse: createdBill.id
-          })
+          });
 
           this.notificationsService.create(notificationData);
 
           const statusBranchOffice = {
             "status": "CARGADO"
-          }
+          };
 
           const statusOrder = {
             "status": "FINALIZADO"
-          }
+          };
 
           const data_series = {
             densidad: billData.charge.densidad,
@@ -223,7 +226,7 @@ export class BillService {
             fechaFinal: fechaFinal,
             service_time: service_time,
             total: total,
-          }
+          };
 
           const requestData = this.requestRepository.create({
             folio: billData.folio,
@@ -242,6 +245,8 @@ export class BillService {
             this.commonService.updateOrder(createdBill.folio, statusOrder);
           }
 
+          await queryRunner.commitTransaction();
+
           return ResponseUtil.success(
             200,
             'Factura creada exitosamente',
@@ -249,6 +254,7 @@ export class BillService {
           );
 
         } else {
+          await queryRunner.rollbackTransaction();
           return ResponseUtil.error(
             400,
             'Ha ocurrido un problema al crear la factura',
@@ -256,11 +262,15 @@ export class BillService {
         }
       }
     } catch (error) {
+      console.log(error.message);
+      await queryRunner.rollbackTransaction();
       return ResponseUtil.error(
         500,
         'Ha ocurrido un error al crear la factura',
         error.message
       );
+    } finally {
+      await queryRunner.release();
     }
   }
 

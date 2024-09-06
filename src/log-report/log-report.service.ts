@@ -7,6 +7,8 @@ import { LogReport } from './entities/log-report.entity';
 import { RouteEvent } from 'src/route-events/entities/route-event.entity';
 import { Usuario } from 'src/usuarios/entities/usuario.entity';
 import { PropaneTruckService } from 'src/propane-truck/propane-truck.service';
+import * as moment from 'moment';
+import { Between } from 'typeorm'; // Asegúrate de importar Between
 
 @Injectable()
 export class LogReportService {
@@ -191,6 +193,41 @@ export class LogReportService {
       return ResponseUtil.error(
         500,
         'Error al eliminar el Informe de registro'
+      );
+    }
+  }
+
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  async findByDay(): Promise<any> {
+    try {
+      const today = moment().startOf('day').toDate();
+      const tomorrow = moment(today).add(1, 'days').toDate();
+  
+      const logReports = await this.logReportRepository.find({
+        where: {
+          state: 'ACTIVO',
+          create: Between(today, tomorrow)
+        },
+        relations: ['route_event', 'user'],
+      });
+  
+      if (logReports.length < 1) {
+        return ResponseUtil.error(
+          400,
+          'No se han encontrado Informes de registro'
+        );
+      }
+  
+      return ResponseUtil.success(
+        200,
+        'Informes de registro encontrados',
+        logReports
+      );
+    } catch (error) {
+      return ResponseUtil.error(
+        500,
+        'Error al obtener los Informes de registro'
       );
     }
   }

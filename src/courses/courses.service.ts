@@ -114,8 +114,6 @@ export class CoursesService {
         courses
       );
 
-
-
     } catch (error) {
       return ResponseUtil.error(
         500,
