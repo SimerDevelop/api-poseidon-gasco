@@ -4,7 +4,6 @@ import { ResponseUtil } from 'src/utils/response.util';
 import { Notification } from './entities/notification.entity';
 import { Repository } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
-import { create } from 'domain';
 
 @Injectable()
 export class NotificationsService {
@@ -14,17 +13,32 @@ export class NotificationsService {
 
   async create(notificationData: Notification): Promise<any> {
     try {
-      const existingnotificationData = await this.notificationRepository.findOne({
+      const existingNotificationData = await this.notificationRepository.findOne({
         where: { type: 'TABLET', status: 'NO LEIDO', message: notificationData.message, state: 'ACTIVO' },
       });
-
-      if (existingnotificationData) {
+  
+      if (existingNotificationData) {
         return ResponseUtil.error(
           400,
           'La Notificación ya existe'
         );
       }
-
+  
+      // Contar el número de registros existentes
+      const totalNotifications = await this.notificationRepository.count();
+  
+      // Si hay 1000 o más registros, eliminar el más antiguo
+      if (totalNotifications >= 1000) {
+        const oldestNotification = await this.notificationRepository.find({
+          order: { create: 'ASC' },
+          take: 1,
+        });
+  
+        if (oldestNotification.length > 0) {
+          await this.notificationRepository.remove(oldestNotification[0]);
+        }
+      }
+  
       if (notificationData) {
         const newNotification = this.notificationRepository.create({
           ...notificationData,

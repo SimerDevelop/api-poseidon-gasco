@@ -60,7 +60,7 @@ export class BranchOfficesService {
 
         if (existingBranchOffice) {
           const updatedBranchOffice = await this.update(existingBranchOffice.id, branchOfficeData);
-          
+
           return ResponseUtil.success(
             200,
             'Establecimiento actualizado exitosamente',
@@ -340,10 +340,9 @@ export class BranchOfficesService {
         return ResponseUtil.error(400, 'El cliente no existe');
       }
 
-
       const stationary_tanks = await this.stationaryTankRepository
         .createQueryBuilder("stationary_tanks")
-        .where("stationary_tanks.id IN (:...ids) OR stationary_tanks.serial IN (:...serials)", {
+        .where("stationary_tanks.id = :ids OR stationary_tanks.serial = :serials", {
           ids: branchOfficeData.stationary_tanks,
           serials: branchOfficeData.stationary_tanks
         })

@@ -39,7 +39,7 @@ export class MailerService {
                 <li style="color: rgb(0, 0, 0); border: 0px solid rgb(217, 217, 227);">Establecimiento: ${bill.branch_office_name}</li>
                 <li style="color: rgb(0, 0, 0); border: 0px solid rgb(217, 217, 227);">NIT: ${bill.branch_office_nit}</li>
                 <li style="color: rgb(0, 0, 0); border: 0px solid rgb(217, 217, 227);">Fecha: ${bill.create}</li>
-                <li style="color: rgb(0, 0, 0); border: 0px solid rgb(217, 217, 227);">Cantidad: ${formattedCharge}lts</li>
+                <li style="color: rgb(0, 0, 0); border: 0px solid rgb(217, 217, 227);">Cantidad: ${formattedCharge}Kg</li>
                 <li style="color: rgb(0, 0, 0); border: 0px solid rgb(217, 217, 227);">Valor total: $${formattedTotal}</li>
             </ul>
             <img src="http://172.105.153.203/assets/images/firma_simer.png" style="width: 300px;">`,

@@ -18,8 +18,11 @@ export class PropaneTruck {
 
     @Column()
     capacity: number;
-    
-    @ManyToMany(() => Usuario, { cascade: true }) 
+
+    @Column({ default: 0.0 , type: 'float' })
+    factor: number;
+
+    @ManyToMany(() => Usuario, { cascade: true })
     @JoinTable()
     operator: Usuario[];
 
