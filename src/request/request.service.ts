@@ -95,9 +95,9 @@ export class RequestService {
     }
   }
 
-  async findAll(): Promise<any> {
+  async findAll(pageData: any): Promise<any> {
     try {
-      const request = await this.requestRepository.find({
+      const [requests, total] = await this.requestRepository.findAndCount({
         where: { state: 'ACTIVO' },
         relations: [
           'order',
@@ -105,10 +105,18 @@ export class RequestService {
           'operator',
           'branch_office',
           'branch_office.stationary_tanks'
-        ]
+        ],
+        skip: (pageData.page - 1) * pageData.limit,
+        take: pageData.limit,
+        order: {
+          create: 'DESC', // Ordenar por el campo 'created' en orden descendente
+          internal_folio: 'DESC' // Ordenar por el campo 'internal_folio' en orden descendente
+        }
       });
 
-      if (request.length < 1) {
+      console.log("requests: ", requests.length);
+
+      if (requests.length < 1) {
         return ResponseUtil.error(
           400,
           'No se han encontrado Servicios'
@@ -118,7 +126,12 @@ export class RequestService {
       return ResponseUtil.success(
         200,
         'Servicios encontrados',
-        request
+        {
+          requests,
+          total,
+          page: pageData.page,
+          limit: pageData.limit,
+        }
       );
     } catch (error) {
       return ResponseUtil.error(

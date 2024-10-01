@@ -30,7 +30,7 @@ export class LogReportService {
           where: { id: logReportData.userId },
           relations: ['role'],
         });
-
+  
         console.log(logReportData.userId);
         
         let propaneTruck = {
@@ -38,11 +38,26 @@ export class LogReportService {
             { plate: "none" }
           ]
         };
-
+  
         if (user.role.name === 'Operario') {
-          propaneTruck = await this.propaneTruckService.getByOperatorId(parseInt( user.idNumber));
+          propaneTruck = await this.propaneTruckService.getByOperatorId(parseInt(user.idNumber));
         }
-
+  
+        // Contar el número de registros existentes
+        const totalLogReports = await this.logReportRepository.count();
+  
+        // Si hay 1000 o más registros, eliminar el más antiguo
+        if (totalLogReports >= 1000) {
+          const oldestLogReport = await this.logReportRepository.find({
+            order: { create: 'ASC' },
+            take: 1,
+          });
+  
+          if (oldestLogReport.length > 0) {
+            await this.logReportRepository.remove(oldestLogReport[0]);
+          }
+        }
+  
         const newLogReport = this.logReportRepository.create({
           ...logReportData,
           id: uuidv4(), // Generar un nuevo UUID
@@ -51,10 +66,9 @@ export class LogReportService {
           user: user,
           propane_truck: propaneTruck.data[0]
         });
-
+  
         const createdLogReport = await this.logReportRepository.save(newLogReport);
-
-
+  
         if (createdLogReport) {
           return ResponseUtil.success(
             200,
@@ -76,7 +90,6 @@ export class LogReportService {
       );
     }
   }
-
   async findAll(): Promise<any> {
     try {
       const logReports = await this.logReportRepository.find({

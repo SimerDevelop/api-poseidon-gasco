@@ -8,9 +8,9 @@ import { ApiKeyGuard } from 'src/auth/api-key.middleware';
 export class RequestController {
   constructor(private readonly requestService: RequestService) {}
 
-  @Get('all')
-  async findAll(): Promise<Request[]> {
-    return this.requestService.findAll();
+  @Post('all')
+  async findAll(@Body('pageData') pageData: any): Promise<Request[]> {
+    return this.requestService.findAll(pageData);
   }
 
   @Get('getById/:id')
