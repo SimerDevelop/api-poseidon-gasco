@@ -13,6 +13,7 @@ export class OrdersService {
   constructor(
     @InjectRepository(Order) private orderRepository: Repository<Order>,
     @InjectRepository(BranchOffices) private branchOfficeRepository: Repository<BranchOffices>,
+    @InjectRepository(Request) private requestRepository: Repository<Request>,
     private commonService: CommonService
   ) { }
 
@@ -88,12 +89,12 @@ export class OrdersService {
 
   async findAll(): Promise<any> {
     try {
-      const occupations = await this.orderRepository.find({
+      const orders = await this.orderRepository.find({
         where: { state: 'ACTIVO' },
         relations: ['branch_office'],
       });
 
-      if (occupations.length < 1) {
+      if (orders.length < 1) {
         return ResponseUtil.error(
           400,
           'No se han encontrado Pedidos'
@@ -103,7 +104,7 @@ export class OrdersService {
       return ResponseUtil.success(
         200,
         'Pedidos encontrados',
-        occupations
+        orders
       );
     } catch (error) {
       return ResponseUtil.error(
@@ -115,16 +116,16 @@ export class OrdersService {
 
   async findOne(id: string) {
     try {
-      const occupation = await this.orderRepository.findOne({
+      const order = await this.orderRepository.findOne({
         where: { id },
         relations: ['branch_office'],
       });
 
-      if (occupation) {
+      if (order) {
         return ResponseUtil.success(
           200,
           'Pedido encontrado',
-          occupation
+          order
         );
       } else {
         return ResponseUtil.error(
@@ -140,28 +141,28 @@ export class OrdersService {
     }
   }
 
-  async update(id, occupationData) {
+  async update(id, orderData) {
     try {
-      const existingOccupation = await this.orderRepository.findOne({
+      const existingOrder = await this.orderRepository.findOne({
         where: { id },
       });
 
-      if (!existingOccupation) {
+      if (!existingOrder) {
         return ResponseUtil.error(
           400,
           'Pedido no encontrado'
         );
       }
 
-      const updatedOccupation = await this.orderRepository.save({
-        ...existingOccupation,
-        ...occupationData,
+      const updatedOrder = await this.orderRepository.save({
+        ...existingOrder,
+        ...orderData,
       });
 
       return ResponseUtil.success(
         200,
         'Pedido actualizada exitosamente',
-        updatedOccupation
+        updatedOrder
       );
     } catch (error) {
       if (error instanceof NotFoundException) {
@@ -179,22 +180,22 @@ export class OrdersService {
 
   async remove(id: string): Promise<any> {
     try {
-      const existingOccupation = await this.orderRepository.findOne({
+      const existingOrder = await this.orderRepository.findOne({
         where: { id },
       });
 
-      if (!existingOccupation) {
+      if (!existingOrder) {
         return ResponseUtil.error(404, 'Pedido no encontrado');
       }
 
-      existingOccupation.state = 'INACTIVO';
-      const updatedOccupation = await this.orderRepository.save(existingOccupation);
+      existingOrder.state = 'INACTIVO';
+      const updatedOrder = await this.orderRepository.save(existingOrder);
 
-      if (updatedOccupation) {
+      if (updatedOrder) {
         return ResponseUtil.success(
           200,
           'Pedido eliminada exitosamente',
-          updatedOccupation
+          updatedOrder
         );
       } else {
         return ResponseUtil.error(
@@ -215,27 +216,27 @@ export class OrdersService {
       const existingOrder = await this.orderRepository.findOne({
         where: { id },
       });
-
+  
       if (!existingOrder) {
         return ResponseUtil.error(404, 'Pedido no encontrado');
       }
-
+  
       if (existingOrder.status != 'DISPONIBLE') {
         return ResponseUtil.error(
           400,
           'No se puede eliminar un Pedido que no esté DISPONIBLE'
         );
       }
-
+  
       await this.orderRepository.remove(existingOrder);
-
+  
       return ResponseUtil.success(
         200,
         'Pedido eliminado exitosamente'
       );
     } catch (error) {
       console.log(error);
-
+  
       return ResponseUtil.error(
         500,
         'Error al eliminar el Pedido'
@@ -247,12 +248,12 @@ export class OrdersService {
 
   async getAvailableOrders() {
     try {
-      const occupations = await this.orderRepository.find({
+      const orders = await this.orderRepository.find({
         where: { status: 'DISPONIBLE' },
         relations: ['branch_office'],
       });
 
-      if (occupations.length < 1) {
+      if (orders.length < 1) {
         return ResponseUtil.error(
           400,
           'No se han encontrado Pedidos'
@@ -262,7 +263,7 @@ export class OrdersService {
       return ResponseUtil.success(
         200,
         'Pedidos encontrados',
-        occupations
+        orders
       );
     } catch (error) {
       return ResponseUtil.error(

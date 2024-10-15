@@ -16,29 +16,29 @@ export class NotificationsService {
       const existingNotificationData = await this.notificationRepository.findOne({
         where: { type: 'TABLET', status: 'NO LEIDO', message: notificationData.message, state: 'ACTIVO' },
       });
-  
+
       if (existingNotificationData) {
         return ResponseUtil.error(
           400,
           'La Notificación ya existe'
         );
       }
-  
+
       // Contar el número de registros existentes
       const totalNotifications = await this.notificationRepository.count();
-  
+
       // Si hay 1000 o más registros, eliminar el más antiguo
       if (totalNotifications >= 1000) {
         const oldestNotification = await this.notificationRepository.find({
           order: { create: 'ASC' },
           take: 1,
         });
-  
+
         if (oldestNotification.length > 0) {
           await this.notificationRepository.remove(oldestNotification[0]);
         }
       }
-  
+
       if (notificationData) {
         const newNotification = this.notificationRepository.create({
           ...notificationData,
@@ -46,7 +46,7 @@ export class NotificationsService {
           state: 'ACTIVO'
         });
         const createdNotification = await this.notificationRepository.save(newNotification);
-      
+
         if (createdNotification) {
           return ResponseUtil.success(
             200,
@@ -93,7 +93,6 @@ export class NotificationsService {
       );
     }
   }
-
 
   async findOne(id: string) {
     try {
@@ -193,7 +192,11 @@ export class NotificationsService {
   async findUnread(): Promise<any> {
     try {
       const notifications = await this.notificationRepository.find({
-        where: { status: 'NO LEIDO' },
+        where: { state: 'ACTIVO' },
+        take: 50,
+        order: {
+          create: 'DESC', // Ordenar por el campo 'created' en orden descendente
+        }
       });
 
       if (notifications.length < 1) {
@@ -215,4 +218,5 @@ export class NotificationsService {
       );
     }
   }
+
 }

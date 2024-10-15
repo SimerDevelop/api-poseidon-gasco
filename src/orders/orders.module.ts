@@ -8,7 +8,7 @@ import { CommonModule } from 'src/common-services/common.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Order, BranchOffices]),
+    TypeOrmModule.forFeature([Order, BranchOffices, Request]),
     CommonModule
   ],
   controllers: [OrdersController],

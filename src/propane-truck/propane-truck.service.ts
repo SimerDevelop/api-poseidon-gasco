@@ -125,6 +125,9 @@ export class PropaneTruckService {
 
   async update(id, propaneTruckData) {
     try {
+
+      console.log('propaneTruckData::', propaneTruckData);
+      
       const existingPropaneTank = await this.propaneTruckRepository.findOne({
         where: { id },
       });

@@ -79,6 +79,9 @@ export class UsuariosService {
       const isPasswordValid = await bcrypt.compare(password, user.password);
 
       if (!isPasswordValid) {
+        console.log('====================================Contraseña incorrecta===============================');
+        console.log(user);
+        console.log('========================================================================================');
         return ResponseUtil.error(
           401,
           'Contraseña incorrecta'
