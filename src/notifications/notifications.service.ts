@@ -16,29 +16,48 @@ export class NotificationsService {
       const existingNotificationData = await this.notificationRepository.findOne({
         where: { type: 'TABLET', status: 'NO LEIDO', message: notificationData.message, state: 'ACTIVO' },
       });
+<<<<<<< HEAD
 
+=======
+  
+>>>>>>> a2788519f95a3750aaa3786cf1926b849faf8980
       if (existingNotificationData) {
         return ResponseUtil.error(
           400,
           'La Notificación ya existe'
         );
       }
+<<<<<<< HEAD
 
       // Contar el número de registros existentes
       const totalNotifications = await this.notificationRepository.count();
 
+=======
+  
+      // Contar el número de registros existentes
+      const totalNotifications = await this.notificationRepository.count();
+  
+>>>>>>> a2788519f95a3750aaa3786cf1926b849faf8980
       // Si hay 1000 o más registros, eliminar el más antiguo
       if (totalNotifications >= 1000) {
         const oldestNotification = await this.notificationRepository.find({
           order: { create: 'ASC' },
           take: 1,
         });
+<<<<<<< HEAD
 
+=======
+  
+>>>>>>> a2788519f95a3750aaa3786cf1926b849faf8980
         if (oldestNotification.length > 0) {
           await this.notificationRepository.remove(oldestNotification[0]);
         }
       }
+<<<<<<< HEAD
 
+=======
+  
+>>>>>>> a2788519f95a3750aaa3786cf1926b849faf8980
       if (notificationData) {
         const newNotification = this.notificationRepository.create({
           ...notificationData,
