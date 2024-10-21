@@ -286,17 +286,16 @@ export class BranchOfficesService {
       const existingBranchOffice = await this.branchOfficeRepository.findOne({
         where: [
           { id: id },
-          { nit: id }
+          { nit: id },
         ],
         relations: [
           'city',
           'city.department',
-
           'client',
           'client.occupation',
-
           'zone',
-          'factor'
+          'factor',
+          'stationary_tanks'
         ]
       });
 
@@ -304,62 +303,101 @@ export class BranchOfficesService {
         return ResponseUtil.error(
           400,
           'No se ha encontrado la sucursal'
-        )
+        );
       }
 
-      const city = await this.cityRepository
-        .createQueryBuilder("cities")
-        .where("cities.id = :cityId OR cities.name = :cityName", {
-          cityId: branchOfficeData.city,
-          cityName: branchOfficeData.city
-        })
-        .getMany();
-      if (city.length < 1) {
-        return ResponseUtil.error(400, 'La ciudad no existe');
+      let city: any;
+      if (branchOfficeData.city) {
+        city = await this.cityRepository
+          .createQueryBuilder("cities")
+          .where("cities.id = :cityId OR cities.name = :cityName", {
+            cityId: branchOfficeData.city,
+            cityName: branchOfficeData.city
+          })
+          .getMany();
+        if (city.length < 1) {
+          return ResponseUtil.error(400, 'La ciudad no existe');
+        }
+      } else {
+        city = existingBranchOffice.city;
       }
 
-      const zone = await this.zoneRepository
-        .createQueryBuilder("zones")
-        .where("zones.id = :zoneId OR zones.name = :zoneName", {
-          zoneId: branchOfficeData.zone,
-          zoneName: branchOfficeData.zone
-        })
-        .getMany();
-      if (zone.length < 1) {
-        return ResponseUtil.error(400, 'La zona no existe');
+      let zone: any;
+      if (branchOfficeData.zone) {
+        zone = await this.zoneRepository
+          .createQueryBuilder("zones")
+          .where("zones.id = :zoneId OR zones.name = :zoneName", {
+            zoneId: branchOfficeData.zone,
+            zoneName: branchOfficeData.zone
+          })
+          .getMany();
+        if (zone.length < 1) {
+          return ResponseUtil.error(400, 'La zona no existe');
+        }
+      } else {
+        zone = existingBranchOffice.zone;
       }
 
-      const client = await this.clientRepository
-        .createQueryBuilder("clients")
-        .where("clients.id = :clientId OR clients.cc = :clientCc", {
-          clientId: branchOfficeData.client,
-          clientCc: branchOfficeData.client
-        })
-        .getMany();
-      if (client.length < 1) {
-        return ResponseUtil.error(400, 'El cliente no existe');
+      let client: any;
+      if (branchOfficeData.client) {
+        client = await this.clientRepository
+          .createQueryBuilder("clients")
+          .where("clients.id = :clientId OR clients.cc = :clientCc", {
+            clientId: branchOfficeData.client,
+            clientCc: branchOfficeData.client
+          })
+          .getMany();
+        if (client.length < 1) {
+          return ResponseUtil.error(400, 'El cliente no existe');
+        }
+      } else {
+        client = existingBranchOffice.client;
       }
 
-      const stationary_tanks = await this.stationaryTankRepository
-        .createQueryBuilder("stationary_tanks")
-        .where("stationary_tanks.id = :ids OR stationary_tanks.serial = :serials", {
-          ids: branchOfficeData.stationary_tanks,
-          serials: branchOfficeData.stationary_tanks
-        })
-        .getMany();
-      if (stationary_tanks.length < 1) {
-        return ResponseUtil.error(400, 'Los tanques estacionarios no existen');
+      let stationary_tanks: any;
+      if (Array.isArray(branchOfficeData.stationary_tanks) && branchOfficeData.stationary_tanks.length === 0) {
+        // Eliminar las relaciones en la tabla de unión
+        await this.branchOfficeRepository
+          .createQueryBuilder()
+          .relation(BranchOffices, 'stationary_tanks')
+          .of(existingBranchOffice)
+          .remove(existingBranchOffice.stationary_tanks);
+
+        // Cambiar el estado de los tanques estacionarios existentes a 'NO ASIGNADO'
+        const promises = existingBranchOffice.stationary_tanks.map((stationary_tank) =>
+          this.StationaryTankService.update(stationary_tank.id, { status: 'NO ASIGNADO' }).then((response) => {
+          })
+        );
+
+        await Promise.all(promises);
+      }
+
+      if (Array.isArray(branchOfficeData.stationary_tanks) && branchOfficeData.stationary_tanks.length > 0) {
+        stationary_tanks = await this.stationaryTankRepository
+          .createQueryBuilder("stationary_tanks")
+          .where("stationary_tanks.id IN (:...ids) OR stationary_tanks.serial IN (:...serials)", {
+            ids: branchOfficeData.stationary_tanks,
+            serials: branchOfficeData.stationary_tanks
+          })
+          .getMany();
+        if (stationary_tanks.length < 1) {
+          return ResponseUtil.error(400, 'Los tanques estacionarios no existen');
+        }
       }
 
       // Busca el primer factor en la base de datos
       const factor = await this.factorRepository.find();
 
-      const geofence = this.createGeofence(parseFloat(branchOfficeData.latitude), parseFloat(branchOfficeData.longitude));
+      let geofence: any;
+      if (branchOfficeData.latitude && branchOfficeData.longitude) {
+        geofence = this.createGeofence(parseFloat(branchOfficeData.latitude), parseFloat(branchOfficeData.longitude));
+      } else {
+        geofence = existingBranchOffice.geofence;
+      }
 
       const updatedBranchOffice = await this.branchOfficeRepository.save({
         ...existingBranchOffice,
         ...branchOfficeData,
-        state: 'ACTIVO',
         city: city,
         zone: zone,
         factor: factor,
@@ -371,12 +409,14 @@ export class BranchOfficesService {
       if (updatedBranchOffice) {
         const data: any = {
           status: "ASIGNADO"
-        }
+        };
 
         const promises = branchOfficeData.stationary_tanks.map((stationary_tank, i) =>
           this.StationaryTankService.update(stationary_tank, data).then((response) => {
           })
         );
+
+        await Promise.all(promises);
       }
 
       return ResponseUtil.success(
@@ -389,12 +429,14 @@ export class BranchOfficesService {
       if (error instanceof NotFoundException) {
         return ResponseUtil.error(
           404,
-          'Sucursal no encontrada'
+          'Sucursal no encontrada',
+          error.message
         );
       }
       return ResponseUtil.error(
         500,
-        'Error al actualizar la Sucursal'
+        'Error al actualizar la Sucursal',
+        error.message
       );
     }
   }
