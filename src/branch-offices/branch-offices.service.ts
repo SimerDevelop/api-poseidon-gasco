@@ -27,7 +27,7 @@ export class BranchOfficesService {
     private StationaryTankService: StationaryTankService,
   ) { }
 
-  async create(branchOfficeData: BranchOffices): Promise<any> {
+  async create(branchOfficeData: BranchOffices): Promise<any> {    
     try {
       if (branchOfficeData) {
         var branch_office_code = await this.generateUniqueBranch_office_code();
@@ -59,13 +59,21 @@ export class BranchOfficesService {
         });
 
         if (existingBranchOffice) {
-          const updatedBranchOffice = await this.update(existingBranchOffice.id, branchOfficeData);
+          try {
+            const updatedBranchOffice = await this.update(existingBranchOffice.id, branchOfficeData);
 
-          return ResponseUtil.success(
-            200,
-            'Establecimiento actualizado exitosamente',
-            updatedBranchOffice
-          );
+            return ResponseUtil.success(
+              200,
+              'Establecimiento actualizado exitosamente',
+              updatedBranchOffice
+            );
+          } catch (error) {
+            return ResponseUtil.error(
+              500,
+              'Error al actualizar el establecimiento',
+              error.message
+            );
+          }
         }
 
         const city = await this.cityRepository
@@ -686,10 +694,11 @@ export class BranchOfficesService {
     try {
       const chunkSize = 500;
       const createdBranchOffices = [];
-
+      
       for (let i = 0; i < data.length; i += chunkSize) {
         const chunk = data.slice(i, i + chunkSize);
-        const promises = chunk.map((item: any) => this.create(item));
+        console.log('chunk', chunk);
+        const promises = chunk.map((item: any) => this.create(item));        
         const responses = await Promise.all(promises);
 
         const successfulBranchOffices = responses
@@ -698,8 +707,6 @@ export class BranchOfficesService {
 
         createdBranchOffices.push(...successfulBranchOffices);
       }
-
-      console.log('=========Se han creado', createdBranchOffices.length, 'sucursales=========');
 
       if (createdBranchOffices.length < 1) {
         return ResponseUtil.error(400, 'Uno o mas campos son incorrectos');

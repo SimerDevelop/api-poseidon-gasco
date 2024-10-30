@@ -274,18 +274,6 @@ export class BillService {
     }
   }
 
-  async createMultiple(billData: any): Promise<any> {
-    for (let i = 0; i < billData.length; i++) {
-      await new Promise(resolve => setTimeout(resolve, 500)); // Espera 1 segundo
-      this.create(billData[i]);
-    }
-
-    return ResponseUtil.success(
-      200,
-      'Facturas creadas exitosamente'
-    );
-  }
-
   async findAll(): Promise<any> {
     try {
       const bills = await this.billRepository.find({
@@ -446,8 +434,19 @@ export class BillService {
     }
   }
 
-
   ///////////////////////////////////////////////////////////////////////////////////
+
+  async createMultiple(billData: any): Promise<any> {
+    for (let i = 0; i < billData.length; i++) {
+      await new Promise(resolve => setTimeout(resolve, 500)); // Espera 1 segundo
+      this.create(billData[i]);
+    }
+
+    return ResponseUtil.success(
+      200,
+      'Facturas creadas exitosamente'
+    );
+  }
 
   async findByDate(branchOfficeCode: number, billData: any): Promise<any> {
     try {
@@ -580,6 +579,38 @@ export class BillService {
       return ResponseUtil.error(
         500,
         'Error al actualizar la Sucursal'
+      );
+    }
+  }
+
+  async findBIllsByToday(): Promise<any> {
+    try {
+      const today = moment().format('YYYY-MM-DD');
+      console.log(today);
+      
+      const bills = await this.billRepository
+        .createQueryBuilder('bill')
+        .where('DATE(bill.fecha) = :today', { today })
+        .getMany();
+  
+      if (bills.length < 1) {
+        return ResponseUtil.error(
+          400,
+          'No se han encontrado facturas'
+        );
+      }
+  
+      return ResponseUtil.success(
+        200,
+        'Facturas encontradas',
+        bills
+      );
+  
+    } catch (error) {
+      return ResponseUtil.error(
+        500,
+        'Ha ocurrido un error al obtener facturas',
+        error.message
       );
     }
   }

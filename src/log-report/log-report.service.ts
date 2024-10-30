@@ -9,6 +9,8 @@ import { Usuario } from 'src/usuarios/entities/usuario.entity';
 import { PropaneTruckService } from 'src/propane-truck/propane-truck.service';
 import * as moment from 'moment';
 import { Between } from 'typeorm'; // Asegúrate de importar Between
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Injectable()
 export class LogReportService {
@@ -19,45 +21,45 @@ export class LogReportService {
     private propaneTruckService: PropaneTruckService
   ) { }
 
-  async create(logReportData: LogReport): Promise<any> {    
-    try {      
+  async create(logReportData: LogReport): Promise<any> {
+    try {
       if (logReportData) {
         const route_event = await this.routeEventRepository.findOne({
           where: { code_event: logReportData.code_event },
         });
-        
+
         const user = await this.usuariosRepository.findOne({
           where: { id: logReportData.userId },
           relations: ['role'],
         });
-  
+
         console.log(logReportData.userId);
-        
+
         let propaneTruck = {
           data: [
             { plate: "none" }
           ]
         };
-  
+
         if (user.role.name === 'Operario') {
           propaneTruck = await this.propaneTruckService.getByOperatorId(parseInt(user.idNumber));
         }
-  
+
         // Contar el número de registros existentes
         const totalLogReports = await this.logReportRepository.count();
-  
+
         // Si hay 1000 o más registros, eliminar el más antiguo
         if (totalLogReports >= 1000) {
           const oldestLogReport = await this.logReportRepository.find({
             order: { create: 'ASC' },
             take: 1,
           });
-  
+
           if (oldestLogReport.length > 0) {
             await this.logReportRepository.remove(oldestLogReport[0]);
           }
         }
-  
+
         const newLogReport = this.logReportRepository.create({
           ...logReportData,
           id: uuidv4(), // Generar un nuevo UUID
@@ -66,9 +68,9 @@ export class LogReportService {
           user: user,
           propane_truck: propaneTruck.data[0]
         });
-  
+
         const createdLogReport = await this.logReportRepository.save(newLogReport);
-  
+
         if (createdLogReport) {
           return ResponseUtil.success(
             200,
@@ -90,6 +92,7 @@ export class LogReportService {
       );
     }
   }
+
   async findAll(): Promise<any> {
     try {
       const logReports = await this.logReportRepository.find({
@@ -216,7 +219,7 @@ export class LogReportService {
     try {
       const today = moment().startOf('day').toDate();
       const tomorrow = moment(today).add(1, 'days').toDate();
-  
+
       const logReports = await this.logReportRepository.find({
         where: {
           state: 'ACTIVO',
@@ -224,14 +227,14 @@ export class LogReportService {
         },
         relations: ['route_event', 'user'],
       });
-  
+
       if (logReports.length < 1) {
         return ResponseUtil.error(
           400,
           'No se han encontrado Informes de registro'
         );
       }
-  
+
       return ResponseUtil.success(
         200,
         'Informes de registro encontrados',
@@ -242,6 +245,38 @@ export class LogReportService {
         500,
         'Error al obtener los Informes de registro'
       );
+    }
+  }
+
+  async createLog(logReportData: any): Promise<any> {
+    try {
+      // Obtiene la clave y la fecha del objeto JSON
+      const keys = Object.keys(logReportData);
+      if (keys.length === 0) {
+        throw new Error('La estructura JSON está vacía');
+      }
+      const filenameKey = keys[0];
+
+      // Genera el nombre del archivo con extensión .json
+      const fileName = `${filenameKey}.json`;
+
+      // Define la ruta de la carpeta logs dentro de src
+      const logsFolderPath = path.join(__dirname, '..', 'logs');
+
+      // Crea la carpeta logs si no existe
+      if (!fs.existsSync(logsFolderPath)) {
+        fs.mkdirSync(logsFolderPath);
+      }
+
+      // Define la ruta completa del archivo
+      const filePath = path.join(logsFolderPath, fileName);
+
+      // Escribe el archivo JSON en la carpeta logs
+      fs.writeFileSync(filePath, JSON.stringify(logReportData, null, 2));
+
+      return { message: 'Archivo JSON guardado correctamente', filePath };
+    } catch (error) {
+      return { message: 'Error al crear el informe de registro', error: error.message };
     }
   }
 }

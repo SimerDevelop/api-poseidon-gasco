@@ -47,12 +47,17 @@ export class BillController {
   }
 
   @Post('getByDate/:code')
-  async findByDate(@Param('code') code: number, @Body() billData: any): Promise<any> {    
+  async findByDate(@Param('code') code: number, @Body() billData: any): Promise<any> {
     return this.billService.findByDate(code, billData);
   }
 
   @Get('getByOperatorId/:id')
   async findBillsByOperator(@Param('id') id: string): Promise<any> {
     return this.billService.findBillsByOperator(id);
+  }
+
+  @Get('findBIllsByToday')
+  async findBIllsByToday(): Promise<Bill[]> {
+    return this.billService.findBIllsByToday();
   }
 }
