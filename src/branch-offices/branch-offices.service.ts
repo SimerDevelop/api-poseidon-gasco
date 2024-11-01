@@ -179,9 +179,9 @@ export class BranchOfficesService {
     }
   }
 
-  async findAll(): Promise<any> {
+  async findAll(pageData: any): Promise<any> {
     try {
-      const branchOffices = await this.branchOfficeRepository.find({
+      const [branchOffices, total] = await this.branchOfficeRepository.findAndCount({
         where: { state: 'ACTIVO' },
         relations: [
           'city',
@@ -194,16 +194,30 @@ export class BranchOfficesService {
           'factor',
 
           'stationary_tanks'
-        ]
+        ],
+        skip: (pageData.page - 1) * pageData.limit,
+        take: pageData.limit,
+        order: {
+          create: 'DESC', // Ordenar por el campo 'created' en orden descendente
+        }
       });
 
       if (branchOffices.length < 1) {
-        return ResponseUtil.error(400, 'No se han encontrado sucursales');
+        return ResponseUtil.error(400, 'No se han encontrado Establecimientos');
       }
 
-      return ResponseUtil.success(200, 'Sucursales encontradas', branchOffices);
+      return ResponseUtil.success(
+        200,
+        'Pedidos encontrados',
+        {
+          branchOffices,
+          total,
+          page: pageData.page,
+          limit: pageData.limit,
+        }
+      );
     } catch (error) {
-      return ResponseUtil.error(500, 'Error al obtener las Sucursales');
+      return ResponseUtil.error(500, 'Error al obtener los Establecimientos');
     }
   }
 
@@ -724,6 +738,41 @@ export class BranchOfficesService {
         'Error al crear las sucursales',
         error.message
       );
+    }
+  }
+
+  async findAlls(): Promise<any> {
+    try {
+      const branchOffices = await this.branchOfficeRepository.find({
+        where: { state: 'ACTIVO' },
+        relations: [
+          'city',
+          'city.department',
+
+          'client',
+          'client.occupation',
+
+          'zone',
+          'factor',
+
+          'stationary_tanks'
+        ],
+        order: {
+          create: 'DESC', // Ordenar por el campo 'created' en orden descendente
+        }
+      });
+
+      if (branchOffices.length < 1) {
+        return ResponseUtil.error(400, 'No se han encontrado Establecimientos');
+      }
+
+      return ResponseUtil.success(
+        200,
+        'Pedidos encontrados',
+        branchOffices,
+      );
+    } catch (error) {
+      return ResponseUtil.error(500, 'Error al obtener los Establecimientos');
     }
   }
 

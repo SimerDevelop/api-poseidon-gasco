@@ -8,9 +8,9 @@ import { ApiKeyGuard } from 'src/auth/api-key.middleware';
 export class BranchOfficesController {
     constructor(private branchOfficesService: BranchOfficesService) { }
 
-    @Get('all')
-    async findAll(): Promise<Permissions[]> {
-        return this.branchOfficesService.findAll();
+    @Post('all')
+    async findAll(@Body('pageData') pageData: any): Promise<Request[]> {
+      return this.branchOfficesService.findAll(pageData);
     }
 
     @Get('all/pending')
@@ -63,6 +63,11 @@ export class BranchOfficesController {
     @Post('createMultiple')
     async createMultiple(@Body() branchOfficeData: BranchOffices): Promise<BranchOffices> {
         return this.branchOfficesService.createMultiple(branchOfficeData);
+    }
+
+    @Get('all')
+    async findAlls(): Promise<Location[]> {
+      return this.branchOfficesService.findAlls();
     }
     
 }

@@ -87,11 +87,19 @@ export class OrdersService {
     }
   }
 
-  async findAll(): Promise<any> {
+  async findAll(pageData: any): Promise<any> {
     try {
-      const orders = await this.orderRepository.find({
+      const [orders, total] = await this.orderRepository.findAndCount({
         where: { state: 'ACTIVO' },
-        relations: ['branch_office'],
+        relations: [
+          'branch_office'
+        ],
+        skip: (pageData.page - 1) * pageData.limit,
+        take: pageData.limit,
+        order: {
+          create: 'DESC', // Ordenar por el campo 'created' en orden descendente
+          folio: 'DESC' // Ordenar por el campo 'internal_folio' en orden descendente
+        }
       });
 
       if (orders.length < 1) {
@@ -104,7 +112,12 @@ export class OrdersService {
       return ResponseUtil.success(
         200,
         'Pedidos encontrados',
-        orders
+        {
+          orders,
+          total,
+          page: pageData.page,
+          limit: pageData.limit,
+        }
       );
     } catch (error) {
       return ResponseUtil.error(

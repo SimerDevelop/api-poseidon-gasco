@@ -114,8 +114,6 @@ export class RequestService {
         }
       });
 
-      console.log("requests: ", requests.length);
-
       if (requests.length < 1) {
         return ResponseUtil.error(
           400,
