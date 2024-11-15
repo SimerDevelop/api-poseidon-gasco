@@ -65,7 +65,6 @@ export class CityService {
   async findAll(): Promise<any> {
     try {
       const cities = await this.cityRepository.find({
-        where: { state: 'ACTIVO' },
         relations: ['department'],
       });
 
@@ -168,6 +167,39 @@ export class CityService {
       }
 
       existingCity.state = 'INACTIVO';
+      const updatedCity = await this.cityRepository.save(existingCity);
+
+      if (updatedCity) {
+        return ResponseUtil.success(
+          200,
+          'Ciudad eliminada exitosamente',
+          updatedCity
+        );
+      } else {
+        return ResponseUtil.error(
+          500,
+          'Ha ocurrido un problema al eliminar la Ciudad'
+        );
+      }
+    } catch (error) {
+      return ResponseUtil.error(
+        500,
+        'Error al eliminar la Ciudad'
+      );
+    }
+  }
+
+  async activate(id: string): Promise<any> {
+    try {
+      const existingCity = await this.cityRepository.findOne({
+        where: { id },
+      });
+
+      if (!existingCity) {
+        return ResponseUtil.error(404, 'Ciudad no encontrada');
+      }
+
+      existingCity.state = 'ACTIVO';
       const updatedCity = await this.cityRepository.save(existingCity);
 
       if (updatedCity) {

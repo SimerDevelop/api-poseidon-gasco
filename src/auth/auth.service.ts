@@ -56,8 +56,19 @@ export class AuthService {
     const permissionsOp: any[] = [];
     const permissions = await this.permissionsRepository.find();
 
-    permissionsSisCom.push(permissions[1], permissions[2]);
-    permissionsOp.push(permissions[0]);
+    permissions.map(permission => {
+      if (permission.accessCode === 'r') {
+        permissionsOp.push(permission);
+      }
+
+      if (permission.accessCode === 'w') {
+        permissionsSisCom.push(permission);
+      }
+
+      if (permission.accessCode === 'e') {
+        permissionsSisCom.push(permission);
+      }
+    });
 
     const roleNames = [
       'Administrador General',

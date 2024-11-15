@@ -22,6 +22,7 @@ import { RequestModule } from 'src/request/request.module';
 import { Request } from 'src/request/entities/request.entity';
 import { LogReportModule } from 'src/log-report/log-report.module';
 import { LogReport } from 'src/log-report/entities/log-report.entity';
+import { Order } from 'src/orders/entities/order.entity';
 
 @Module({
   imports: [
@@ -36,7 +37,8 @@ import { LogReport } from 'src/log-report/entities/log-report.entity';
       Notification,
       StationaryTank,
       Request,
-      LogReport
+      LogReport,
+      Order
     ]),
     NotificationsModule,
     UsuariosModule,

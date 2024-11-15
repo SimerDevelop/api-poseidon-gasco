@@ -49,4 +49,9 @@ export class OrdersController {
   async createMultiple(@Body() orderData: Order): Promise<Order> {
       return this.ordersService.createMultiple(orderData);
   }
+
+  @Post('allOrders')
+  async findAllOrders(@Body('pageData') pageData: any): Promise<Request[]> {
+    return this.ordersService.findAllOrders(pageData);
+  }
 }

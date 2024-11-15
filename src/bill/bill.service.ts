@@ -15,9 +15,10 @@ import { Notification } from 'src/notifications/entities/notification.entity';
 import { CommonService } from 'src/common-services/common.service';
 import { RequestService } from 'src/request/request.service';
 import { Request } from 'src/request/entities/request.entity';
-import * as moment from 'moment-timezone';
 import { LogReportService } from 'src/log-report/log-report.service';
 import { LogReport } from 'src/log-report/entities/log-report.entity';
+import * as moment from 'moment-timezone';
+import { Order } from 'src/orders/entities/order.entity';
 
 function transformDate(dateStr) {
   const [day, month, year] = dateStr.split('/');
@@ -35,6 +36,7 @@ export class BillService {
     @InjectRepository(Request) private requestRepository: Repository<Request>,
     @InjectRepository(Notification) private notificationRepository: Repository<Notification>,
     @InjectRepository(LogReport) private logReportRepository: Repository<LogReport>,
+    @InjectRepository(Order) private orderRepository: Repository<Order>,
     @Inject(NotificationsService) private notificationsService: NotificationsService,
     @Inject(UsuariosService) private userService: UsuariosService,
     private commonService: CommonService,
@@ -242,7 +244,10 @@ export class BillService {
 
           if (responseUpdateStatus.statusCode == 200) {
             this.commonService.findCoursesByOperatorNameAndLastName(createdBill.operator_firstName, createdBill.operator_lastName);
-            this.commonService.updateOrder(createdBill.folio, statusOrder);
+            const order = await this.orderRepository.findOne({
+              where: { folio: billData.folio }
+            });
+            this.commonService.updateOrder(order.id, statusOrder);
           }
 
           await queryRunner.commitTransaction();

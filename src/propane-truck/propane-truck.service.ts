@@ -27,9 +27,20 @@ export class PropaneTruckService {
         );
       }
 
-      const operator = await this.usuariosRepository.findByIds(
-        propaneTruckData.operator
-      );
+      // Asegúrate de que propaneTruckData.operator sea un array
+      const operatorIdsOrNumbers = Array.isArray(propaneTruckData.operator) ? propaneTruckData.operator : [propaneTruckData.operator];
+
+      const operator = await this.usuariosRepository
+        .createQueryBuilder("usuarios")
+        .where("usuarios.id IN (:...ids) OR usuarios.idNumber IN (:...idNumbers)", {
+          ids: operatorIdsOrNumbers,
+          idNumbers: operatorIdsOrNumbers
+        })
+        .getMany();
+
+      if (operator.length < 1) {
+        return ResponseUtil.error(400, 'Los operadores no existen');
+      }
 
       console.log(operator);
 
@@ -69,7 +80,6 @@ export class PropaneTruckService {
   async findAll(): Promise<any> {
     try {
       const propaneTanks = await this.propaneTruckRepository.find({
-        where: { state: 'ACTIVO' },
         relations: ['operator']
       });
 
@@ -127,7 +137,7 @@ export class PropaneTruckService {
     try {
 
       console.log('propaneTruckData::', propaneTruckData);
-      
+
       const existingPropaneTank = await this.propaneTruckRepository.findOne({
         where: { id },
       });
@@ -200,6 +210,39 @@ export class PropaneTruckService {
   }
 
   /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  async activate(id: string): Promise<any> {
+    try {
+      const existingPropaneTank = await this.propaneTruckRepository.findOne({
+        where: { id },
+      });
+
+      if (!existingPropaneTank) {
+        return ResponseUtil.error(404, 'Auto Tanque no encontrado');
+      }
+
+      existingPropaneTank.state = 'ACTIVO';
+      const updatedPropaneTank = await this.propaneTruckRepository.save(existingPropaneTank);
+
+      if (updatedPropaneTank) {
+        return ResponseUtil.success(
+          200,
+          'Auto Tanque activado exitosamente',
+          updatedPropaneTank
+        );
+      } else {
+        return ResponseUtil.error(
+          500,
+          'Ha ocurrido un problema al activar el Auto Tanque'
+        );
+      }
+    } catch (error) {
+      return ResponseUtil.error(
+        500,
+        'Error al activar el Auto Tanque'
+      );
+    }
+  }
 
   async getByOperatorId(operatorId: number): Promise<any> {
     try {

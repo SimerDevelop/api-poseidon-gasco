@@ -377,6 +377,8 @@ export class BranchOfficesService {
       }
 
       let stationary_tanks: any;
+      console.log('branchOfficeData.stationary_tanks', branchOfficeData.stationary_tanks);
+      
       if (Array.isArray(branchOfficeData.stationary_tanks) && branchOfficeData.stationary_tanks.length === 0) {
         // Eliminar las relaciones en la tabla de unión
         await this.branchOfficeRepository

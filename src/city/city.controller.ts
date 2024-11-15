@@ -32,4 +32,9 @@ export class CityController {
   async remove(@Param('id') id: string): Promise<any> {
     return this.cityService.remove(id);
   }
+
+  @Delete('activate/:id')
+  async activate(@Param('id') id: string): Promise<any> {
+    return this.cityService.activate(id);
+  }
 }

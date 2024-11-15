@@ -45,7 +45,7 @@ import { PropaneTruckModule } from 'src/propane-truck/propane-truck.module';
       Order,
       Request,
       LogReport,
-      RouteEvent
+      RouteEvent,
     ]),
     CommonModule,
     RequestModule,

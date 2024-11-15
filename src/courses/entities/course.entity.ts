@@ -24,6 +24,9 @@ export class Course {
     @Column()
     state: string;
 
+    @Column({ default: '' })
+    fecha: string;
+
     @CreateDateColumn()
     create: Date;
 

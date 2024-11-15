@@ -90,7 +90,9 @@ export class OrdersService {
   async findAll(pageData: any): Promise<any> {
     try {
       const [orders, total] = await this.orderRepository.findAndCount({
-        where: { state: 'ACTIVO' },
+        where: {
+          state: 'ACTIVO'
+        },
         relations: [
           'branch_office'
         ],
@@ -201,6 +203,14 @@ export class OrdersService {
         return ResponseUtil.error(404, 'Pedido no encontrado');
       }
 
+      // Verifica si el estado del pedido es 'DISPONIBLE' o 'EN CURSO'
+      if (existingOrder.status === 'EN CURSO') {
+        return ResponseUtil.error(
+          400,
+          'No se puede eliminar un Pedido que esté EN CURSO'
+        );
+      }
+
       existingOrder.state = 'INACTIVO';
       const updatedOrder = await this.orderRepository.save(existingOrder);
 
@@ -226,30 +236,35 @@ export class OrdersService {
 
   async delete(id: string): Promise<any> {
     try {
+      console.log('id', id);
+
       const existingOrder = await this.orderRepository.findOne({
         where: { id },
+        relations: ['branch_office'] // Asegúrate de incluir todas las relaciones necesarias
       });
-  
+
       if (!existingOrder) {
         return ResponseUtil.error(404, 'Pedido no encontrado');
       }
-  
-      if (existingOrder.status != 'DISPONIBLE') {
+
+      // Verifica si el estado del pedido es 'DISPONIBLE' o 'EN CURSO'
+      if (existingOrder.status === 'EN CURSO') {
         return ResponseUtil.error(
           400,
-          'No se puede eliminar un Pedido que no esté DISPONIBLE'
+          'No se puede eliminar un Pedido que esté EN CURSO'
         );
       }
-  
+
+      // No elimines la sucursal relacionada, solo elimina el pedido
       await this.orderRepository.remove(existingOrder);
-  
+
       return ResponseUtil.success(
         200,
         'Pedido eliminado exitosamente'
       );
     } catch (error) {
       console.log(error);
-  
+
       return ResponseUtil.error(
         500,
         'Error al eliminar el Pedido'
@@ -262,7 +277,10 @@ export class OrdersService {
   async getAvailableOrders() {
     try {
       const orders = await this.orderRepository.find({
-        where: { status: 'DISPONIBLE' },
+        where: {
+          status: 'DISPONIBLE',
+          state: 'ACTIVO'
+        },
         relations: ['branch_office'],
       });
 
@@ -307,6 +325,48 @@ export class OrdersService {
       'Pedidos creados exitosamente',
       createdOrders
     );
+  }
+
+  async findAllOrders(pageData: any): Promise<any> {
+    try {
+      const [orders, total] = await this.orderRepository.findAndCount({
+        where: {
+          state: 'ACTIVO'
+        },
+        relations: [
+          'branch_office'
+        ],
+        skip: (pageData.page - 1) * pageData.limit,
+        take: pageData.limit,
+        order: {
+          create: 'DESC', // Ordenar por el campo 'created' en orden descendente
+          folio: 'DESC' // Ordenar por el campo 'internal_folio' en orden descendente
+        }
+      });
+
+      if (orders.length < 1) {
+        return ResponseUtil.error(
+          400,
+          'No se han encontrado Pedidos'
+        );
+      }
+
+      return ResponseUtil.success(
+        200,
+        'Pedidos encontrados',
+        {
+          orders,
+          total,
+          page: pageData.page,
+          limit: pageData.limit,
+        }
+      );
+    } catch (error) {
+      return ResponseUtil.error(
+        500,
+        'Error al obtener los Pedidos'
+      );
+    }
   }
 
 }

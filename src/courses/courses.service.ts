@@ -9,6 +9,7 @@ import { Location } from 'src/locations/entities/location.entity';
 import { CommonService } from 'src/common-services/common.service';
 import { Order } from 'src/orders/entities/order.entity';
 import { PropaneTruck } from 'src/propane-truck/entities/propane-truck.entity';
+import * as moment from 'moment-timezone';
 
 @Injectable()
 export class CoursesService {
@@ -24,12 +25,15 @@ export class CoursesService {
 
   async create(courseData: Course): Promise<any> {
     try {
+      console.log('courseData::', courseData);
+
       const operator = await this.userRepository.findOne({
         where: { idNumber: courseData.operator_id },
       });
 
+      const plate = courseData.propane_truck.toString();
       const propane_truck = await this.propaneTruckRepository.findOne({
-        where: { plate: courseData.propane_truck.plate },
+        where: { plate: plate },
       });
 
       const orders = await this.orderRepository.findByIds(courseData.orders);
@@ -45,19 +49,18 @@ export class CoursesService {
 
       const createdCourse = await this.courseRepository.save(newCourse);
 
-      console.log('==============Derrotero Creado:', createdCourse);
-
       if (createdCourse) {
         const status = {
           'status': 'EN CURSO'
-        }
+        };
 
-        for (let i = 0; i < orders.length; i++) {
-          await this.commonService.updateOrder(orders[i].id, status);
-        }
+        const updateResults = await Promise.all(orders.map(order => {
+          console.log('Actualizando orden:', order.id);
+          return this.commonService.updateOrder(order.id, status);
+        }));
 
-        await this.commonService.updatePropaneTruckStatus(propane_truck.id, status)
-        //await this.commonService.updateUserStatus(operator.id, status)
+        await this.commonService.updatePropaneTruckStatus(propane_truck.id, status);
+        //await this.commonService.updateUserStatus(operator.id, status);
       }
 
       if (!createdCourse) {
@@ -122,24 +125,24 @@ export class CoursesService {
     }
   }
 
-  async findOne(id: string) {    
+  async findOne(id: string) {
     try {
       const course = await this.courseRepository
-      .createQueryBuilder('courses')
-      .leftJoinAndSelect('courses.operator', 'operator')
-      .leftJoinAndSelect('courses.orders', 'orders')
-      .leftJoinAndSelect('courses.propane_truck', 'propane_truck')
-      .leftJoinAndSelect('orders.branch_office', 'branch_office')
-      .leftJoinAndSelect('branch_office.city', 'city')
-      .leftJoinAndSelect('city.department', 'department')
-      .leftJoinAndSelect('branch_office.client', 'client')
-      .leftJoinAndSelect('client.occupation', 'occupation')
-      .leftJoinAndSelect('branch_office.factor', 'factor')
-      .leftJoinAndSelect('branch_office.zone', 'zone')
-      .leftJoinAndSelect('branch_office.stationary_tanks', 'stationary_tanks')
-      .where('courses.id = :id', { id })
-      .getOne();
-      
+        .createQueryBuilder('courses')
+        .leftJoinAndSelect('courses.operator', 'operator')
+        .leftJoinAndSelect('courses.orders', 'orders')
+        .leftJoinAndSelect('courses.propane_truck', 'propane_truck')
+        .leftJoinAndSelect('orders.branch_office', 'branch_office')
+        .leftJoinAndSelect('branch_office.city', 'city')
+        .leftJoinAndSelect('city.department', 'department')
+        .leftJoinAndSelect('branch_office.client', 'client')
+        .leftJoinAndSelect('client.occupation', 'occupation')
+        .leftJoinAndSelect('branch_office.factor', 'factor')
+        .leftJoinAndSelect('branch_office.zone', 'zone')
+        .leftJoinAndSelect('branch_office.stationary_tanks', 'stationary_tanks')
+        .where('courses.id = :id', { id })
+        .getOne();
+
       if (course) {
         this.commonService.findCoursesByOperatorNameAndLastName(course.operator.firstName, course.operator.lastName);
 
@@ -164,6 +167,9 @@ export class CoursesService {
 
   async findCourseByOperatorId(operatorId: string) {
     try {
+      const today = moment().format('YYYY-MM-DD');
+      console.log(today);
+
       const courses = await this.courseRepository
         .createQueryBuilder('courses')
         .leftJoinAndSelect('courses.operator', 'operator')
@@ -178,6 +184,7 @@ export class CoursesService {
         .leftJoinAndSelect('branch_office.zone', 'zone')
         .leftJoinAndSelect('branch_office.stationary_tanks', 'stationary_tanks')
         .where('operator.id = :operatorId', { operatorId })
+        .andWhere('DATE(courses.fecha) = :today', { today })
         .orderBy('courses.id', 'DESC') // Ordena los resultados por el campo 'id' en orden descendente
         .getOne(); // Obtiene el primer resultado
 
@@ -212,6 +219,9 @@ export class CoursesService {
 
   async update(id, courseData) {
     try {
+
+      console.log('courseData::', courseData);
+
       const existingCourse = await this.courseRepository.findOne({
         where: { id },
       });
@@ -228,16 +238,16 @@ export class CoursesService {
       const updatedCourse = await this.courseRepository.save({
         ...existingCourse,
         orders: orders,
+        fecha: courseData.fecha
       });
 
       if (updatedCourse) {
         const status = {
           'status': 'EN CURSO'
-        }
+        };
 
-        for (let i = 0; i < orders.length; i++) {
-          await this.commonService.updateOrder(orders[i].id, status);
-        }
+        // Utiliza Promise.all para actualizar todas las órdenes en paralelo
+        await Promise.all(orders.map(order => this.commonService.updateOrder(order.id, status)));
       }
 
       if (updatedCourse) {

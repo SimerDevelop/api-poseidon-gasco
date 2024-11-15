@@ -144,25 +144,31 @@ export class CommonService {
     }
 
     async updateOrder(id, orderData) {
-        console.log('orderData', orderData);
         try {
+            // Buscar el pedido por id o folio
             const existingOrderData = await this.orderRepository.findOne({
-                where: [
-                    { id: id },
-                    { folio: id }
-                ]
+                where: { id: id },                
             });
 
             if (!existingOrderData) {
+                console.log('No se encontró el pedido:', id);
                 return ResponseUtil.error(
                     404,
                     'Pedido no encontrado'
                 );
             }
 
+            if (existingOrderData.status === 'FINALIZADO') {
+                return ResponseUtil.error(
+                    400,
+                    'No se puede actualizar un Pedido entregado'
+                );
+            }
+
             const updatedOrder = await this.orderRepository.save({
                 ...existingOrderData,
                 ...orderData,
+                status: orderData.status
             });
 
             return ResponseUtil.success(
@@ -172,8 +178,7 @@ export class CommonService {
             );
 
         } catch (error) {
-            console.log(error);
-
+            console.error('Error al actualizar el Pedido:', id, error);
             return ResponseUtil.error(
                 500,
                 'Error al actualizar el Pedido'

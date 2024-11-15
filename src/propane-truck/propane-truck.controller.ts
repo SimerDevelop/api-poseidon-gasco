@@ -35,6 +35,11 @@ export class PropaneTruckController {
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
 
+  @Delete('activate/:id')
+  async activate(@Param('id') id: string): Promise<any> {
+    return this.propaneTruckService.activate(id);
+  }
+
   @Get('getByOperator/:operator')
   async getByOperatorId(@Param('operator') operator: any): Promise<any> {
     return this.propaneTruckService.getByOperatorId(operator);
