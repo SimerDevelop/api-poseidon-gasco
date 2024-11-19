@@ -60,4 +60,9 @@ export class BillController {
   async findBIllsByToday(): Promise<Bill[]> {
     return this.billService.findBIllsByToday();
   }
+
+  @Post('findByFolio')
+  async findByFolio(@Body() billData: any): Promise<any> {    
+    return this.billService.findByFolio(billData);
+  }
 }

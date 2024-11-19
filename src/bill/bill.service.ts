@@ -639,6 +639,48 @@ export class BillService {
     return newBillCode;
   }
 
+  async findByFolio(billData: any) {
+    try {
+      const { folio, fechaInicial } = billData;
+      
+      const bill = await this.billRepository.findOne({
+        where: {
+          folio: folio,
+          fecha: fechaInicial
+        },
+        relations: [
+          'branch_office',
+          'branch_office.city',
+          'branch_office.city.department',
+          'branch_office.zone',
+
+          'operator',
+          'operator.role',
+
+          'client',
+          'client.occupation',
+        ]
+      });
+
+      if (bill) {
+        return ResponseUtil.success(
+          200,
+          'Factura encontrada',
+          bill
+        );
+      } else {
+        return ResponseUtil.error(
+          404,
+          'Factura no encontrada'
+        );
+      }
+    } catch (error) {
+      return ResponseUtil.error(
+        500,
+        'Error al obtener la Factura'
+      );
+    }
+  }
 }
 
 function formatFecha(fechaInicial: string, horaInicial: string): string {
