@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { StationaryTank } from './entities/stationary-tank.entity';
+import { BranchOffices } from 'src/branch-offices/entities/branch-office.entity';
 import { Repository } from 'typeorm';
 import { ResponseUtil } from 'src/utils/response.util';
 import { v4 as uuidv4 } from 'uuid';
@@ -9,6 +10,7 @@ import { v4 as uuidv4 } from 'uuid';
 export class StationaryTankService {
   constructor(
     @InjectRepository(StationaryTank) private stationaryTankRepository: Repository<StationaryTank>,
+    @InjectRepository(BranchOffices) private branchOfficesRepository: Repository<BranchOffices>,
   ) { }
 
   async create(stationaryTankData: StationaryTank): Promise<any> {
@@ -64,16 +66,16 @@ export class StationaryTankService {
   async findAll(): Promise<any> {
     try {
       const stationaryTanks = await this.stationaryTankRepository.find({
-        where: { state: 'ACTIVO' }
+        where: { state: 'ACTIVO' },
       });
-
+  
       if (stationaryTanks.length < 1) {
         return ResponseUtil.error(
           400,
           'No se han encontrado Tanque estacionarios'
         );
       }
-
+  
       return ResponseUtil.success(
         200,
         'Tanque estacionarios encontrados',
@@ -83,33 +85,48 @@ export class StationaryTankService {
       return ResponseUtil.error(
         500,
         'Error al obtener los Tanque estacionarios',
-        error
+        error.message
       );
     }
   }
 
-  async findOne(id: string) {
+  async findOne(id: string): Promise<any> {
     try {
+      // Buscar el tanque estacionario por su ID
       const propaneTank = await this.stationaryTankRepository.findOne({
         where: { id }
       });
-
-      if (propaneTank) {
-        return ResponseUtil.success(
-          200,
-          'Tanque estacionario encontrado',
-          propaneTank
-        );
-      } else {
+  
+      if (!propaneTank) {
         return ResponseUtil.error(
           404,
           'Tanque estacionario no encontrado'
         );
       }
+  
+      // Buscar las sucursales que contienen el tanque estacionario
+      const branchOffices = await this.branchOfficesRepository
+        .createQueryBuilder('branch_office')
+        .leftJoinAndSelect('branch_office.stationary_tanks', 'stationary_tank')
+        .where('stationary_tank.id = :id', { id })
+        .getMany();
+  
+      // Incluir las sucursales en la respuesta del tanque estacionario
+      const result = {
+        ...propaneTank,
+        branchOffices
+      };
+  
+      return ResponseUtil.success(
+        200,
+        'Tanque estacionario encontrado',
+        result
+      );
     } catch (error) {
       return ResponseUtil.error(
         500,
-        'Error al obtener el Tanque estacionario'
+        'Error al obtener el Tanque estacionario',
+        error.message
       );
     }
   }
