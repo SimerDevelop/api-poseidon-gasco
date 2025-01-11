@@ -7,6 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { BranchOffices } from 'src/branch-offices/entities/branch-office.entity';
 import { CommonService } from 'src/common-services/common.service';
 import { MailerService } from 'src/utils/mailer.service';
+import { ConfigurationSheetService } from 'src/configuration-sheet/configuration-sheet.service';
 
 @Injectable()
 export class OrdersService {
@@ -14,7 +15,8 @@ export class OrdersService {
     @InjectRepository(Order) private orderRepository: Repository<Order>,
     @InjectRepository(BranchOffices) private branchOfficeRepository: Repository<BranchOffices>,
     @InjectRepository(Request) private requestRepository: Repository<Request>,
-    private commonService: CommonService
+    private commonService: CommonService,
+    private configurationSheetService: ConfigurationSheetService,
   ) { }
 
   async create(orderData: Order): Promise<any> {
@@ -63,7 +65,8 @@ export class OrdersService {
       }
 
       if (createdOrder.token != '') {
-        MailerService.sendToken(createdOrder, branch_office.client[0].email);
+        const dataEmail = await this.loadDataEmail();        
+        MailerService.sendToken(createdOrder, branch_office.client[0].email, dataEmail);
       }
 
       if (createdOrder) {
@@ -369,4 +372,16 @@ export class OrdersService {
     }
   }
 
+  async loadDataEmail() {
+    try {
+      const response = await this.configurationSheetService.findAll();
+      if (response.statusCode === 200) {
+        return response.data[0];
+      } else {
+        console.error('Error al cargar los datos del email:', response.message);
+      }
+    } catch (error) {
+      console.error('Error al cargar los datos del email:', error.message);
+    }
+  }
 }

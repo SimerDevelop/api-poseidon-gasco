@@ -25,16 +25,22 @@ import { OrdersModule } from './orders/orders.module';
 import { RequestModule } from './request/request.module';
 import { RouteEventsModule } from './route-events/route-events.module';
 import { LogReportModule } from './log-report/log-report.module';
+import { ConfigurationSheetModule } from './configuration-sheet/configuration-sheet.module';
+import { ThrottlerModule } from '@nestjs/throttler';
 
 @Module({
   imports: [
+    ThrottlerModule.forRoot([{
+      ttl: 60,
+      limit: 15,
+    }]),
     TypeOrmModule.forRoot({
       type: 'mysql',
       host: '127.0.0.1',
       port: 3306,
       username: 'root',
       password: '123',
-      database: 'sistema_registros',
+      database: 'poseidon_egsa',
       entities: [__dirname + '/**/*.entity{.ts,.js}'], // Ruta a las entidades
       synchronize: true,
     }),
@@ -61,6 +67,7 @@ import { LogReportModule } from './log-report/log-report.module';
     RequestModule,
     RouteEventsModule,
     LogReportModule,
+    ConfigurationSheetModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -23,6 +23,9 @@ import { Request } from 'src/request/entities/request.entity';
 import { LogReportModule } from 'src/log-report/log-report.module';
 import { LogReport } from 'src/log-report/entities/log-report.entity';
 import { Order } from 'src/orders/entities/order.entity';
+import { ConfigurationSheetModule } from 'src/configuration-sheet/configuration-sheet.module';
+import { ConfigurationSheetService } from 'src/configuration-sheet/configuration-sheet.service';
+import { ConfigurationSheet } from 'src/configuration-sheet/entities/configuration-sheet.entity';
 
 @Module({
   imports: [
@@ -38,18 +41,20 @@ import { Order } from 'src/orders/entities/order.entity';
       StationaryTank,
       Request,
       LogReport,
-      Order
+      Order,
+      ConfigurationSheet
     ]),
     NotificationsModule,
     UsuariosModule,
     BillModule,
     CommonModule,
     RequestModule,
-    LogReportModule
+    LogReportModule,
+    ConfigurationSheetModule
   ],
   controllers: [BranchOfficesController],
   providers: [
-    BranchOfficesService, BillService, NotificationsService, StationaryTankService
+    BranchOfficesService, BillService, NotificationsService, StationaryTankService, ConfigurationSheetService
   ],
   exports: [BranchOfficesService]
 })

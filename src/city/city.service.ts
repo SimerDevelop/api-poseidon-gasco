@@ -99,19 +99,19 @@ export class CityService {
       if (city) {
         return ResponseUtil.success(
           200,
-          'Cuidad encontrada',
+          'Ciudad encontrada',
           city
         );
       } else {
         return ResponseUtil.error(
           404,
-          'Cuidad no encontrada'
+          'Ciudad no encontrada'
         );
       }
     } catch (error) {
       return ResponseUtil.error(
         500,
-        'Error al obtener la Cuidad'
+        'Error al obtener la Ciudad'
       );
     }
   }

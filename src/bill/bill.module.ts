@@ -28,6 +28,9 @@ import { LogReport } from 'src/log-report/entities/log-report.entity';
 import { RouteEventsModule } from 'src/route-events/route-events.module';
 import { RouteEvent } from 'src/route-events/entities/route-event.entity';
 import { PropaneTruckModule } from 'src/propane-truck/propane-truck.module';
+import { ConfigurationSheetModule } from 'src/configuration-sheet/configuration-sheet.module';
+import { ConfigurationSheetService } from 'src/configuration-sheet/configuration-sheet.service';
+import { ConfigurationSheet } from 'src/configuration-sheet/entities/configuration-sheet.entity';
 
 @Module({
   imports: [
@@ -46,14 +49,16 @@ import { PropaneTruckModule } from 'src/propane-truck/propane-truck.module';
       Request,
       LogReport,
       RouteEvent,
+      ConfigurationSheet
     ]),
     CommonModule,
     RequestModule,
     LogReportModule,
     RouteEventsModule,
-    PropaneTruckModule
+    PropaneTruckModule,
+    ConfigurationSheetModule
   ],
   controllers: [BillController],
-  providers: [BillService, NotificationsService, UsuariosService, StationaryTankService, CommonService, RequestService, LogReportService]
+  providers: [BillService, NotificationsService, UsuariosService, StationaryTankService, CommonService, RequestService, LogReportService, ConfigurationSheetService]
 })
 export class BillModule { }

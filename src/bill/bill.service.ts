@@ -19,6 +19,7 @@ import { LogReportService } from 'src/log-report/log-report.service';
 import { LogReport } from 'src/log-report/entities/log-report.entity';
 import * as moment from 'moment-timezone';
 import { Order } from 'src/orders/entities/order.entity';
+import { ConfigurationSheetService } from 'src/configuration-sheet/configuration-sheet.service';
 
 function transformDate(dateStr) {
   const [day, month, year] = dateStr.split('/');
@@ -27,6 +28,7 @@ function transformDate(dateStr) {
 
 @Injectable()
 export class BillService {
+  dataEmail: any;
 
   constructor(
     @InjectRepository(Bill) private billRepository: Repository<Bill>,
@@ -41,7 +43,8 @@ export class BillService {
     @Inject(UsuariosService) private userService: UsuariosService,
     private commonService: CommonService,
     private requestService: RequestService,
-    private logReportService: LogReportService
+    private logReportService: LogReportService,
+    private configurationSheetService: ConfigurationSheetService,
   ) { }
 
   async create(billData: Bill): Promise<any> {
@@ -55,6 +58,36 @@ export class BillService {
 
     try {
       const userId = billData.operator.toString();
+
+      //Validación de fechas y horas en el registro de la factura (si no se ingresan o no son válidas, se ajustan a los valores actuales)
+      if (
+        !billData.charge.fechaInicial ||
+        !billData.charge.fechaFinal ||
+        !billData.charge.horaInicial ||
+        !billData.charge.horaFinal ||
+        !isValidDateFormat(billData.charge.fechaInicial) ||
+        !isValidDateFormat(billData.charge.fechaFinal) ||
+        !isValidTimeFormat(billData.charge.horaInicial) ||
+        !isValidTimeFormat(billData.charge.horaFinal)
+      ) {
+        const currentDate = getCurrentDateFormatted(); // Obtiene la fecha actual en el formato correcto
+        const currentTime = getCurrentTimeFormatted(); // Obtiene la hora actual en el formato correcto
+
+        if (!isValidDateFormat(billData.charge.fechaInicial)) {
+          billData.charge.fechaInicial = currentDate;
+        }
+        if (!isValidDateFormat(billData.charge.fechaFinal)) {
+          billData.charge.fechaFinal = currentDate;
+        }
+        if (!isValidTimeFormat(billData.charge.horaInicial)) {
+          billData.charge.horaInicial = currentTime;
+        }
+        if (!isValidTimeFormat(billData.charge.horaFinal)) {
+          billData.charge.horaFinal = currentTime;
+        }
+
+        console.log(`Las fechas y horas se han ajustado a los valores actuales para el registro (${billData.plate})`);
+      }
 
       if (billData.charge.masaTotal <= 0) {
         let data = {
@@ -112,8 +145,8 @@ export class BillService {
         await queryRunner.rollbackTransaction();
 
         return ResponseUtil.error(
-          401,
-          'Ya existe una factura con los mismos datos, se ha creado un informe de error',
+          200,
+          'Ya existe una factura con los mismos datos, se ha creado un informe de error STATUS SEND 200',
           createdLogReport
         );
       }
@@ -199,7 +232,9 @@ export class BillService {
         if (createdBill) {
           this.updateStatus(branchOfficeId);
           PDFGenerator.generatePDF(createdBill); // Llama al generador de PDF
-          MailerService.sendEmail(createdBill, client[0].email);
+
+          const dataEmail = await this.loadDataEmail();
+          MailerService.sendEmail(createdBill, client[0].email, dataEmail);
 
           const notificationData = this.notificationRepository.create({
             status: "NO LEIDO",
@@ -592,25 +627,25 @@ export class BillService {
     try {
       const today = moment().format('YYYY-MM-DD');
       console.log(today);
-      
+
       const bills = await this.billRepository
         .createQueryBuilder('bill')
         .where('DATE(bill.fecha) = :today', { today })
         .getMany();
-  
+
       if (bills.length < 1) {
         return ResponseUtil.error(
           400,
           'No se han encontrado facturas'
         );
       }
-  
+
       return ResponseUtil.success(
         200,
         'Facturas encontradas',
         bills
       );
-  
+
     } catch (error) {
       return ResponseUtil.error(
         500,
@@ -642,7 +677,7 @@ export class BillService {
   async findByFolio(billData: any) {
     try {
       const { folio, fechaInicial } = billData;
-      
+
       const bill = await this.billRepository.findOne({
         where: {
           folio: folio,
@@ -681,6 +716,19 @@ export class BillService {
       );
     }
   }
+
+  async loadDataEmail() {
+    try {
+      const response = await this.configurationSheetService.findAll();
+      if (response.statusCode === 200) {
+        return response.data[0];
+      } else {
+        console.error('Error al cargar los datos del email:', response.message);
+      }
+    } catch (error) {
+      console.error('Error al cargar los datos del email:', error.message);
+    }
+  }
 }
 
 function formatFecha(fechaInicial: string, horaInicial: string): string {
@@ -708,4 +756,41 @@ function msToTime(duration: number) {
   const secondsStr = (seconds < 10) ? "0" + seconds : seconds;
 
   return hoursStr + ":" + minutesStr + ":" + secondsStr;
+}
+
+// Función para validar el formato de la fecha
+function isValidDateFormat(date: string): boolean {
+  // Expresión regular para día (1-31), mes (1-12), y año (2 o 4 dígitos)
+  const dateRegex = /^(0?[1-9]|[12][0-9]|3[01])\/(0?[1-9]|1[0-2])\/(\d{2}|\d{4})$/;
+
+  return dateRegex.test(date);
+}
+
+// Función para obtener la fecha actual en formato D/M/YY
+function getCurrentDateFormatted(): string {
+  const now = new Date();
+
+  const day = now.getDate(); // Día sin ceros iniciales
+  const month = now.getMonth() + 1; // Mes sin ceros iniciales
+  const year = now.getFullYear() % 100; // Últimos 2 dígitos del año
+
+  return `${day}/${month}/${year}`; // Retorna en formato D/M/YY
+}
+
+// Función para validar el formato de la hora
+function isValidTimeFormat(time: string): boolean {
+  // Expresión regular para validar hora (1-23), minuto (0-59), y segundo (0-59)
+  const timeRegex = /^([1-9]|1\d|2[0-3]):([0-5]?\d):([0-5]?\d)$/;
+
+  // Verifica si la hora cumple con el formato esperado
+  return timeRegex.test(time);
+}
+
+// Función para obtener la hora actual en el formato requerido (H:M:S)
+function getCurrentTimeFormatted(): string {
+  const now = new Date();
+  const hours = now.getHours(); // Hora (0-23)
+  const minutes = now.getMinutes(); // Minuto (0-59)
+  const seconds = now.getSeconds(); // Segundo (0-59)
+  return `${hours}:${minutes}:${seconds}`;
 }

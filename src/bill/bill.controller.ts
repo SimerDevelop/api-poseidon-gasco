@@ -2,7 +2,7 @@ import { Controller, Get, Post, Body, Param, Delete, Put, UseGuards } from '@nes
 import { BillService } from './bill.service';
 import { Bill } from './entities/bill.entity';
 import { ApiKeyGuard } from 'src/auth/api-key.middleware';
-
+import { Throttle } from '@nestjs/throttler';
 
 @Controller('bill')
 @UseGuards(ApiKeyGuard)
@@ -20,6 +20,7 @@ export class BillController {
   }
 
   @Post('create')
+  @Throttle({ default: { limit: 5, ttl: 60 } })
   async create(@Body() billData: Bill): Promise<Bill> {
     return this.billService.create(billData);
   }

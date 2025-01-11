@@ -89,7 +89,7 @@ export class UsuariosService {
       }
 
       // Generar un token de acceso
-      const accessToken = jwt.sign({ userId: user.id, key: 'poseidon-gasco.9010' }, 'poseidon', { expiresIn: '1h' });
+      const accessToken = jwt.sign({ userId: user.id, key: 'poseidon-egsa.9010', color: '#014e87', system: 'Poseidon' }, 'poseidon', { expiresIn: '1h' });
 
       console.log('====================================Usuario logueado====================================');
       console.log(user);
