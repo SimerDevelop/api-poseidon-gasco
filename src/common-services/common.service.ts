@@ -107,7 +107,6 @@ export class CommonService {
     }
 
     async updatePropaneTruckStatus(id, propaneTruckData) {
-        console.log('propaneTruckData', propaneTruckData);
         try {
             const existingPropaneTruckData = await this.propaneTruckRepository.findOne({
                 where: [

@@ -9,10 +9,6 @@ import * as path from 'path';
 
 export class MailerService {
     static sendEmail(bill: Bill, clientEmail: string, dataEmail: any) {
-        console.log('---------------------------------------------------------------');
-        console.log(dataEmail.company);
-        console.log('---------------------------------------------------------------');
-
         const company = dataEmail.company;
         const companyEmail = dataEmail.email;
         const companyPhone = dataEmail.phone;
@@ -111,8 +107,7 @@ export class MailerService {
             if (error) {
                 console.log(error);
             } else {
-                console.log('Email sent: ' + info.response);
-
+                console.log(`Email Enviado a ${bill.client_firstName} ${bill.client_lastName} | Email sent: ${info.response}`);
                 const filename = `bill_${bill.id}.pdf`
                 const filepath = join(enviroment.srcDir, 'pdf', filename)
 
@@ -213,7 +208,7 @@ export class MailerService {
                 if (error) {
                     console.log(error);
                 } else {
-                    console.log('Token sent: ' + info.response, 'Token: ', order.token);
+                    console.log(`Establecimiento: ${order.branch_office.name} | Token enviado a ${order.branch_office.client[0].firstName} ${order.branch_office.client[0].lastName} | Email sent: ${info.response}`);
                 }
             });
 

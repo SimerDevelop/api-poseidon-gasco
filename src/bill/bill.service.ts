@@ -17,9 +17,10 @@ import { RequestService } from 'src/request/request.service';
 import { Request } from 'src/request/entities/request.entity';
 import { LogReportService } from 'src/log-report/log-report.service';
 import { LogReport } from 'src/log-report/entities/log-report.entity';
-import * as moment from 'moment-timezone';
 import { Order } from 'src/orders/entities/order.entity';
 import { ConfigurationSheetService } from 'src/configuration-sheet/configuration-sheet.service';
+import { Mutex } from 'async-mutex';
+import * as moment from 'moment-timezone';
 
 function transformDate(dateStr) {
   const [day, month, year] = dateStr.split('/');
@@ -29,6 +30,7 @@ function transformDate(dateStr) {
 @Injectable()
 export class BillService {
   dataEmail: any;
+  private mutex = new Mutex();
 
   constructor(
     @InjectRepository(Bill) private billRepository: Repository<Bill>,
@@ -48,271 +50,272 @@ export class BillService {
   ) { }
 
   async create(billData: Bill): Promise<any> {
-    console.log('==================BillData===================');
-    console.log(billData);
-    console.log('=============================================');
+    return this.mutex.runExclusive(async () => {
+      console.log('==================BillData recieved===================');
+      console.log(billData);
+      console.log('======================================================');
 
-    const queryRunner = this.billRepository.manager.connection.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
+      const queryRunner = this.billRepository.manager.connection.createQueryRunner();
+      await queryRunner.connect();
+      await queryRunner.startTransaction();
 
-    try {
-      const userId = billData.operator.toString();
+      try {
+        const userId = billData.operator.toString();
 
-      //Validación de fechas y horas en el registro de la factura (si no se ingresan o no son válidas, se ajustan a los valores actuales)
-      if (
-        !billData.charge.fechaInicial ||
-        !billData.charge.fechaFinal ||
-        !billData.charge.horaInicial ||
-        !billData.charge.horaFinal ||
-        !isValidDateFormat(billData.charge.fechaInicial) ||
-        !isValidDateFormat(billData.charge.fechaFinal) ||
-        !isValidTimeFormat(billData.charge.horaInicial) ||
-        !isValidTimeFormat(billData.charge.horaFinal)
-      ) {
-        const currentDate = getCurrentDateFormatted(); // Obtiene la fecha actual en el formato correcto
-        const currentTime = getCurrentTimeFormatted(); // Obtiene la hora actual en el formato correcto
+        //Validación de fechas y horas en el registro de la factura (si no se ingresan o no son válidas, se ajustan a los valores actuales)
+        if (
+          !billData.charge.fechaInicial ||
+          !billData.charge.fechaFinal ||
+          !isValidDateFormat(billData.charge.fechaInicial) ||
+          !isValidDateFormat(billData.charge.fechaFinal)
+        ) {
+          const currentDate = getCurrentDateFormatted(); // Obtiene la fecha actual en el formato correcto
+          const currentTime = getCurrentTimeFormatted(); // Obtiene la hora actual en el formato correcto
 
-        if (!isValidDateFormat(billData.charge.fechaInicial)) {
-          billData.charge.fechaInicial = currentDate;
-        }
-        if (!isValidDateFormat(billData.charge.fechaFinal)) {
-          billData.charge.fechaFinal = currentDate;
-        }
-        if (!isValidTimeFormat(billData.charge.horaInicial)) {
-          billData.charge.horaInicial = currentTime;
-        }
-        if (!isValidTimeFormat(billData.charge.horaFinal)) {
-          billData.charge.horaFinal = currentTime;
+          if (!isValidDateFormat(billData.charge.fechaInicial)) {
+            billData.charge.fechaInicial = currentDate;
+          }
+          if (!isValidDateFormat(billData.charge.fechaFinal)) {
+            billData.charge.fechaFinal = currentDate;
+          }
+
+          console.log(`Las fechas y horas se han ajustado a los valores actuales para el registro (${billData.plate})`);
         }
 
-        console.log(`Las fechas y horas se han ajustado a los valores actuales para el registro (${billData.plate})`);
-      }
+        if (billData.charge.masaTotal <= 0) {
+          let data = {
+            code_event: 1,
+            userId: userId,
+          };
 
-      if (billData.charge.masaTotal <= 0) {
-        let data = {
-          code_event: 1,
-          userId: userId,
-        };
+          const logReport = this.logReportRepository.create({
+            ...data
+          });
 
-        const logReport = this.logReportRepository.create({
-          ...data
-        });
+          const createdLogReport = await this.logReportService.create(logReport);
 
-        const createdLogReport = await this.logReportService.create(logReport);
+          await queryRunner.rollbackTransaction();
 
-        await queryRunner.rollbackTransaction();
+          return ResponseUtil.error(
+            401,
+            'La masa no puede ser menor o igual a 0, se ha creado un informe de error',
+            createdLogReport
+          );
+        }
 
-        return ResponseUtil.error(
-          401,
-          'La masa no puede ser menor o igual a 0, se ha creado un informe de error',
-          createdLogReport
-        );
-      }
+        const existingUser = await this.userService.findUserById(userId);
 
-      const existingUser = await this.userService.findUserById(userId);
+        if (existingUser.statusCode != 200) {
+          const response = ResponseUtil.error(400, 'Usuario no válido');
+          console.log("Usuario inválido en la creación de la factura");
+          await queryRunner.rollbackTransaction();
+          return response;
+        }
 
-      if (existingUser.statusCode != 200) {
-        const response = ResponseUtil.error(400, 'Usuario no válido');
-        console.log("Usuario inválido");
-        await queryRunner.rollbackTransaction();
-        return response;
-      }
+        const existingBill = await queryRunner.manager
+          .createQueryBuilder(Bill, "bill")
+          .setLock("pessimistic_write")
+          .where("JSON_EXTRACT(bill.charge, '$.fechaInicial') = :fechaInicial", { fechaInicial: billData.charge.fechaInicial })
+          .andWhere("JSON_EXTRACT(bill.charge, '$.horaInicial') = :horaInicial", { horaInicial: billData.charge.horaInicial })
+          .andWhere("JSON_EXTRACT(bill.charge, '$.masaTotal') = :masaTotal", { masaTotal: billData.charge.masaTotal })
+          .getOne();
 
-      const existingBill = await queryRunner.manager
-        .createQueryBuilder(Bill, "bill")
-        .setLock("pessimistic_write")
-        .where("JSON_EXTRACT(bill.charge, '$.fechaInicial') = :fechaInicial", { fechaInicial: billData.charge.fechaInicial })
-        .andWhere("JSON_EXTRACT(bill.charge, '$.horaInicial') = :horaInicial", { horaInicial: billData.charge.horaInicial })
-        .andWhere("JSON_EXTRACT(bill.charge, '$.masaTotal') = :masaTotal", { masaTotal: billData.charge.masaTotal })
-        .getOne();
+        if (existingBill) {
+          let data = {
+            code_event: 18,
+            userId: userId,
+          };
 
-      if (existingBill) {
-        let data = {
-          code_event: 18,
-          userId: userId,
-        };
+          const logReport = this.logReportRepository.create({
+            ...data
+          });
 
-        const logReport = this.logReportRepository.create({
-          ...data
-        });
+          const createdLogReport = await this.logReportService.create(logReport);
 
-        const createdLogReport = await this.logReportService.create(logReport);
+          console.log('===================== FACTURA EXISTENTE ========================');
+          console.log(billData.plate);
+          console.log('Masa:', billData.charge.masaTotal);
+          console.log('Fecha:', billData.charge.fechaInicial, billData.charge.horaInicial);
+          console.log('se ha creado un informe de error STATUS SEND 200');
+          console.log('================================================================');
 
-        console.log('===================== FACTURA EXISTENTE ========================');
-        console.log(createdLogReport);
+          await queryRunner.rollbackTransaction();
 
-        await queryRunner.rollbackTransaction();
+          return ResponseUtil.error(
+            200,
+            'Ya existe una factura con los mismos datos, se ha creado un informe de error STATUS SEND 200',
+            createdLogReport
+          );
+        }
 
-        return ResponseUtil.error(
-          200,
-          'Ya existe una factura con los mismos datos, se ha creado un informe de error STATUS SEND 200',
-          createdLogReport
-        );
-      }
+        // Generación de código Unico para la factura
+        var bill_code = await this.generateUniqueCode();
 
-      // Generación de código Unico para la factura
-      var bill_code = await this.generateUniqueCode();
-
-      var existing_code = await queryRunner.manager.findOne(Bill, {
-        where: {
-          bill_code: bill_code
-        },
-      });
-
-      while (existing_code) {
-        // Generar un nuevo código único
-        const new_code = await this.generateUniqueCode();
-        // Verificar si ya existe un permiso con el nuevo nombre
-        existing_code = await queryRunner.manager.findOne(Bill, {
+        var existing_code = await queryRunner.manager.findOne(Bill, {
           where: {
-            bill_code: new_code
+            bill_code: bill_code
           },
         });
 
-        // Asignar el nuevo código único a la variable branch_office_code
-        bill_code = new_code;
-      }
-
-      const branchOfficeId = billData.branch_office;
-
-      const branch_office = await queryRunner.manager.findByIds(BranchOffices, billData.branch_office);
-
-      const operator = await queryRunner.manager.findByIds(Usuario, billData.operator);
-
-      const client = await queryRunner.manager.findByIds(Client, billData.client);
-
-      const total = branch_office[0].kilogramValue * billData.charge.masaTotal;
-
-      const formattedFecha = formatFecha(billData.charge.fechaInicial, billData.charge.horaInicial);
-
-      const fechaInicial = formatFecha(billData.charge.fechaInicial, billData.charge.horaInicial);
-      const fechaFinal = formatFecha(billData.charge.fechaFinal, billData.charge.horaFinal);
-
-      const fechaInicialMoment = moment(fechaInicial, 'YYYY-MM-DD HH:mm:ss');
-      const fechaFinalMoment = moment(fechaFinal, 'YYYY-MM-DD HH:mm:ss');
-
-      const duration = Math.abs(fechaFinalMoment.diff(fechaInicialMoment));
-
-      const service_time = msToTime(duration);
-
-      if (billData) {
-        const newBill = this.billRepository.create({
-          ...billData,
-          id: uuidv4(), // Generar un nuevo UUID
-          bill_code: bill_code,
-          branch_office_name: branch_office[0].name,
-          branch_office_nit: branch_office[0].nit,
-          branch_office_address: branch_office[0].address,
-          branch_office_code: branch_office[0].branch_office_code,
-          client_firstName: client[0].firstName,
-          client_lastName: client[0].lastName,
-          client_cc: client[0].cc,
-          operator_firstName: operator[0].firstName,
-          operator_lastName: operator[0].lastName,
-          densidad: billData.charge.densidad,
-          temperatura: billData.charge.temperatura,
-          masaTotal: parseFloat(billData.charge.masaTotal),
-          volumenTotal: billData.charge.volumenTotal,
-          horaInicial: billData.charge.horaInicial,
-          horaFinal: billData.charge.horaFinal,
-          fechaInicial: billData.charge.fechaInicial,
-          fechaFinal: billData.charge.fechaFinal,
-          fecha: formattedFecha,
-          service_time: service_time,
-          total: total,
-        });
-
-        const createdBill = await queryRunner.manager.save(newBill);
-
-        console.log('===================== FACTURA CREADA ========================');
-        console.log(createdBill);
-        console.log('=============================================================');
-
-        if (createdBill) {
-          this.updateStatus(branchOfficeId);
-          PDFGenerator.generatePDF(createdBill); // Llama al generador de PDF
-
-          const dataEmail = await this.loadDataEmail();
-          MailerService.sendEmail(createdBill, client[0].email, dataEmail);
-
-          const notificationData = this.notificationRepository.create({
-            status: "NO LEIDO",
-            message: `Se ha creado una nueva remisión con el código ${createdBill.id} en el establecimiento ${createdBill.branch_office_name}`,
-            title: `Nueva remisión en ${createdBill.branch_office_name}`,
-            type: "CARGUE",
-            intercourse: createdBill.id
+        while (existing_code) {
+          // Generar un nuevo código único
+          const new_code = await this.generateUniqueCode();
+          // Verificar si ya existe un permiso con el nuevo nombre
+          existing_code = await queryRunner.manager.findOne(Bill, {
+            where: {
+              bill_code: new_code
+            },
           });
 
-          this.notificationsService.create(notificationData);
+          // Asignar el nuevo código único a la variable branch_office_code
+          bill_code = new_code;
+        }
 
-          const statusBranchOffice = {
-            "status": "CARGADO"
-          };
+        const branchOfficeId = billData.branch_office;
 
-          const statusOrder = {
-            "status": "FINALIZADO"
-          };
+        const branch_office = await queryRunner.manager.findByIds(BranchOffices, billData.branch_office);
 
-          const data_series = {
+        const operator = await queryRunner.manager.findByIds(Usuario, billData.operator);
+
+        const client = await queryRunner.manager.findByIds(Client, billData.client);
+
+        const total = branch_office[0].kilogramValue * billData.charge.masaTotal;
+
+        const formattedFecha = formatFecha(billData.charge.fechaInicial, billData.charge.horaInicial);
+
+        const fechaInicial = formatFecha(billData.charge.fechaInicial, billData.charge.horaInicial);
+        const fechaFinal = formatFecha(billData.charge.fechaFinal, billData.charge.horaFinal);
+
+        const fechaInicialMoment = moment(fechaInicial, 'YYYY-MM-DD HH:mm:ss');
+        const fechaFinalMoment = moment(fechaFinal, 'YYYY-MM-DD HH:mm:ss');
+
+        const duration = Math.abs(fechaFinalMoment.diff(fechaInicialMoment));
+
+        const service_time = msToTime(duration);
+
+        if (billData) {
+          const newBill = this.billRepository.create({
+            ...billData,
+            id: uuidv4(), // Generar un nuevo UUID
+            bill_code: bill_code,
+            branch_office_name: branch_office[0].name,
+            branch_office_nit: branch_office[0].nit,
+            branch_office_address: branch_office[0].address,
+            branch_office_code: branch_office[0].branch_office_code,
+            client_firstName: client[0].firstName,
+            client_lastName: client[0].lastName,
+            client_cc: client[0].cc,
+            operator_firstName: operator[0].firstName,
+            operator_lastName: operator[0].lastName,
             densidad: billData.charge.densidad,
             temperatura: billData.charge.temperatura,
-            masaTotal: billData.charge.masaTotal,
+            masaTotal: parseFloat(billData.charge.masaTotal),
             volumenTotal: billData.charge.volumenTotal,
-            fechaInicial: fechaInicial,
-            fechaFinal: fechaFinal,
+            horaInicial: billData.charge.horaInicial,
+            horaFinal: billData.charge.horaFinal,
+            fechaInicial: billData.charge.fechaInicial,
+            fechaFinal: billData.charge.fechaFinal,
+            fecha: formattedFecha,
             service_time: service_time,
             total: total,
-          };
-
-          const requestData = this.requestRepository.create({
-            folio: billData.folio,
-            payment_type: billData.payment_type,
-            plate: billData.plate,
-            idNumber: operator[0].idNumber,
-            branch_office_code: branch_office[0].branch_office_code,
-            data_series: data_series
           });
 
-          await this.requestService.create(requestData);
-          const responseUpdateStatus = await this.commonService.updateBranchOfficeStatus(branchOfficeId, statusBranchOffice);
+          const createdBill = await queryRunner.manager.save(newBill);
 
-          if (responseUpdateStatus.statusCode == 200) {
-            this.commonService.findCoursesByOperatorNameAndLastName(createdBill.operator_firstName, createdBill.operator_lastName);
-            const order = await this.orderRepository.findOne({
-              where: { folio: billData.folio }
+          console.log('===================== FACTURA CREADA ========================');
+          console.log(createdBill.branch_office_name, 'Recibo: ', createdBill.bill_code);
+          console.log(createdBill.fecha);
+          console.log('Masa Total: ', billData.charge.masaTotal);
+          console.log(createdBill.operator_firstName, createdBill.operator_lastName);
+          console.log(billData.plate);
+          console.log('=============================================================');
+
+          if (createdBill) {
+            this.updateStatus(branchOfficeId);
+            PDFGenerator.generatePDF(createdBill); // Llama al generador de PDF
+
+            const dataEmail = await this.loadDataEmail();
+            MailerService.sendEmail(createdBill, client[0].email, dataEmail);
+
+            const notificationData = this.notificationRepository.create({
+              status: "NO LEIDO",
+              message: `Se ha creado una nueva remisión con el código ${createdBill.id} en el establecimiento ${createdBill.branch_office_name}`,
+              title: `Nueva remisión en ${createdBill.branch_office_name}`,
+              type: "CARGUE",
+              intercourse: createdBill.id
             });
-            this.commonService.updateOrder(order.id, statusOrder);
+
+            this.notificationsService.create(notificationData);
+
+            const statusBranchOffice = {
+              "status": "CARGADO"
+            };
+
+            const statusOrder = {
+              "status": "FINALIZADO"
+            };
+
+            const data_series = {
+              densidad: billData.charge.densidad,
+              temperatura: billData.charge.temperatura,
+              masaTotal: billData.charge.masaTotal,
+              volumenTotal: billData.charge.volumenTotal,
+              fechaInicial: fechaInicial,
+              fechaFinal: fechaFinal,
+              service_time: service_time,
+              total: total,
+            };
+
+            const requestData = this.requestRepository.create({
+              folio: billData.folio,
+              payment_type: billData.payment_type,
+              plate: billData.plate,
+              idNumber: operator[0].idNumber,
+              branch_office_code: branch_office[0].branch_office_code,
+              data_series: data_series
+            });
+
+            await this.requestService.create(requestData);
+            const responseUpdateStatus = await this.commonService.updateBranchOfficeStatus(branchOfficeId, statusBranchOffice);
+
+            if (responseUpdateStatus.statusCode == 200) {
+              this.commonService.findCoursesByOperatorNameAndLastName(createdBill.operator_firstName, createdBill.operator_lastName);
+              const order = await this.orderRepository.findOne({
+                where: { folio: billData.folio }
+              });
+              this.commonService.updateOrder(order.id, statusOrder);
+            }
+
+            await queryRunner.commitTransaction();
+
+            return ResponseUtil.success(
+              200,
+              'Factura creada exitosamente',
+              createdBill
+            );
+
+          } else {
+            await queryRunner.rollbackTransaction();
+            return ResponseUtil.error(
+              400,
+              'Ha ocurrido un problema al crear la factura',
+            );
           }
-
-          await queryRunner.commitTransaction();
-
-          return ResponseUtil.success(
-            200,
-            'Factura creada exitosamente',
-            createdBill
-          );
-
-        } else {
-          await queryRunner.rollbackTransaction();
-          return ResponseUtil.error(
-            400,
-            'Ha ocurrido un problema al crear la factura',
-          );
         }
+      } catch (error) {
+        console.log(error.message);
+        await queryRunner.rollbackTransaction();
+        return ResponseUtil.error(
+          500,
+          'Ha ocurrido un error al crear la factura',
+          error.message
+        );
+      } finally {
+        await queryRunner.release();
       }
-    } catch (error) {
-      console.log(error.message);
-      await queryRunner.rollbackTransaction();
-      return ResponseUtil.error(
-        500,
-        'Ha ocurrido un error al crear la factura',
-        error.message
-      );
-    } finally {
-      await queryRunner.release();
-    }
+    });
   }
+
 
   async findAll(): Promise<any> {
     try {
@@ -395,8 +398,6 @@ export class BillService {
       const existingBill = await this.billRepository.findOne({
         where: { id },
       });
-
-      console.log(billData);
 
       if (!existingBill) {
         throw new NotFoundException('Factura no encontrada');
@@ -626,7 +627,6 @@ export class BillService {
   async findBIllsByToday(): Promise<any> {
     try {
       const today = moment().format('YYYY-MM-DD');
-      console.log(today);
 
       const bills = await this.billRepository
         .createQueryBuilder('bill')
@@ -740,8 +740,11 @@ function formatFecha(fechaInicial: string, horaInicial: string): string {
   const paddedMinute = minute.padStart(2, '0');
   const paddedSecond = second.padStart(2, '0');
   const fechaString = `20${year}-${paddedMonth}-${paddedDay}T${paddedHour}:${paddedMinute}:${paddedSecond}`;
-  const fecha = moment.tz(fechaString, 'America/Bogota');
 
+  // Parse the date string using the server's local time
+  const fecha = moment(fechaString, 'YYYY-MM-DDTHH:mm:ss');
+
+  // Format the date in the desired format
   const formattedFecha = fecha.format('YYYY-MM-DD HH:mm:ss');
   return formattedFecha;
 }

@@ -71,7 +71,8 @@ export class RequestService {
 
         if (createdRequest) {
           console.log("=====================Servicio creado exitosamente==========");
-          console.log(createdRequest);
+          console.log(`Folio: ${createdRequest.folio}`);
+          console.log(`Servicio: ${createdRequest.internal_folio}`);
           console.log("===========================================================");
 
           return ResponseUtil.success(

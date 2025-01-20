@@ -40,7 +40,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
       port: 3306,
       username: 'root',
       password: '123',
-      database: 'poseidon_egsa',
+      database: 'poseidon_montagas',
       entities: [__dirname + '/**/*.entity{.ts,.js}'], // Ruta a las entidades
       synchronize: true,
     }),

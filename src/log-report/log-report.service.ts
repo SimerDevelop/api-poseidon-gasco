@@ -33,8 +33,6 @@ export class LogReportService {
           relations: ['role'],
         });
 
-        console.log(logReportData.userId);
-
         let propaneTruck = {
           data: [
             { plate: "none" }

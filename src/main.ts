@@ -29,7 +29,7 @@ async function bootstrap() {
     credentials: true,
   });
 
-  await app.listen(4006);
+  await app.listen(4002);
 }
 
 bootstrap();

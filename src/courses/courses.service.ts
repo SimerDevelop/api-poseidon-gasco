@@ -25,8 +25,6 @@ export class CoursesService {
 
   async create(courseData: Course): Promise<any> {
     try {
-      console.log('courseData::', courseData);
-
       const operator = await this.userRepository.findOne({
         where: { idNumber: courseData.operator_id },
       });
@@ -55,7 +53,6 @@ export class CoursesService {
         };
 
         const updateResults = await Promise.all(orders.map(order => {
-          console.log('Actualizando orden:', order.id);
           return this.commonService.updateOrder(order.id, status);
         }));
 
@@ -69,6 +66,13 @@ export class CoursesService {
           'Ha ocurrido un problema al crear el Derrotero'
         );
       }
+
+      console.log('============= Derrotero Creado =======================');
+      console.log(courseData.propane_truck);
+      console.log(operator.firstName, operator.lastName);
+      console.log(courseData.fecha);
+      console.log('Pedidos:',courseData.orders.length);
+      console.log('======================================================');
 
       return ResponseUtil.success(
         200,
@@ -168,7 +172,6 @@ export class CoursesService {
   async findCourseByOperatorId(operatorId: string) {
     try {
       const today = moment().format('YYYY-MM-DD');
-      console.log(today);
 
       const courses = await this.courseRepository
         .createQueryBuilder('courses')
@@ -187,12 +190,6 @@ export class CoursesService {
         .andWhere('DATE(courses.fecha) = :today', { today })
         .orderBy('courses.id', 'DESC') // Ordena los resultados por el campo 'id' en orden descendente
         .getOne(); // Obtiene el primer resultado
-
-      console.log('=====================DERROTERO CONSULTADO=====================');
-      console.log("operario: ", operatorId);
-      console.log("______________________________");
-      console.log(courses);
-      console.log('==============================================================');
 
       if (!courses) {
         return ResponseUtil.error(
@@ -219,9 +216,6 @@ export class CoursesService {
 
   async update(id, courseData) {
     try {
-
-      console.log('courseData::', courseData);
-
       const existingCourse = await this.courseRepository.findOne({
         where: { id },
       });
@@ -334,7 +328,7 @@ export class CoursesService {
 
       await this.courseRepository.remove(existingCourse);
 
-      console.log(`==============DERROTERO ${id} ELIMINADO=============`);
+      console.log(`Derrotero eliminado: ${id}`);
 
       return ResponseUtil.success(
         200,

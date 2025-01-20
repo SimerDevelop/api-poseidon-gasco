@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Req } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Usuario } from './entities/usuario.entity';
@@ -6,7 +6,8 @@ import { ResponseUtil } from 'src/utils/response.util';
 import * as bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 import * as jwt from 'jsonwebtoken';
-
+import * as moment from 'moment';
+import { Request } from 'express';
 
 @Injectable()
 export class UsuariosService {
@@ -17,11 +18,10 @@ export class UsuariosService {
   async createUser(userData: Usuario): Promise<any> {
     try {
       if (userData) {
-        console.log(userData);
         // Verificar si ya existe un usuario con el numero de identificación
         const existingUser = await this.usuariosRepository
           .createQueryBuilder('usuario')
-          .where('usuario.idNumber = :idNumber OR usuario.email = :email', { idNumber: userData.idNumber, email: userData.email})
+          .where('usuario.idNumber = :idNumber OR usuario.email = :email', { idNumber: userData.idNumber, email: userData.email })
           .getOne();
 
         if (existingUser) {
@@ -61,7 +61,7 @@ export class UsuariosService {
     }
   }
 
-  async loginUser(credentials: string, password: string): Promise<any> {
+  async loginUser(@Req() req: Request, credentials: string, password: string): Promise<any> {
     try {
       const user = await this.usuariosRepository
         .createQueryBuilder('usuario')
@@ -70,42 +70,43 @@ export class UsuariosService {
         .getOne();
 
       if (!user) {
-        return ResponseUtil.error(
-          404,
-          'Usuario no encontrado'
-        );
+        return ResponseUtil.error(404, 'Usuario no encontrado');
       }
 
+      const currentTime = moment().format('YYYY-MM-DD HH:mm:ss');
       const isPasswordValid = await bcrypt.compare(password, user.password);
+      const clientIp = req.ip;
 
       if (!isPasswordValid) {
         console.log('====================================Contraseña incorrecta===============================');
-        console.log(user);
+        console.log(`Hora del servidor: ${currentTime}`);
+        console.log(`Usuario: ${user.firstName}, ${user.lastName}`);
+        console.log(`Identificación: ${user.idNumber}`);
+        console.log(`Rol: ${user.role.name}`);
+        console.log(`IP del cliente: ${clientIp}`);
         console.log('========================================================================================');
-        return ResponseUtil.error(
-          401,
-          'Contraseña incorrecta'
-        );
+        return ResponseUtil.error(401, 'Contraseña incorrecta');
       }
 
       // Generar un token de acceso
-      const accessToken = jwt.sign({ userId: user.id, key: 'poseidon-egsa.9010', color: '#014e87', system: 'Poseidon' }, 'poseidon', { expiresIn: '1h' });
+      const accessToken = jwt.sign(
+        { userId: user.id, key: 'poseidon-M0NT4645+.6040', color: '#014e87', system: 'Poseidon' },
+        'poseidon',
+        { expiresIn: '1h' }
+      );
 
       console.log('====================================Usuario logueado====================================');
-      console.log(user);
+      console.log(`Hora del servidor: ${currentTime}`);
+      console.log(`Usuario: ${user.firstName}, ${user.lastName}`);
+      console.log(`Identificación: ${user.idNumber}`);
+      console.log(`Rol: ${user.role.name}`);
+      console.log(`IP del cliente: ${clientIp}`);
       console.log('========================================================================================');
 
-      return ResponseUtil.success(
-        200,
-        'Inicio de sesión exitoso',
-        { user, accessToken } // Incluye el token en la respuesta
-      );
+      return ResponseUtil.success(200, 'Inicio de sesión exitoso', { user, accessToken });
 
     } catch (error) {
-      return ResponseUtil.error(
-        500,
-        'Error al iniciar sesión'
-      );
+      return ResponseUtil.error(500, 'Error al iniciar sesión');
     }
   }
 

@@ -1,7 +1,8 @@
-import { Controller, Get, Post, Body, Param, Delete, Put, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, Put, Req, UseGuards } from '@nestjs/common';
 import { UsuariosService } from './usuarios.service';
 import { Usuario } from './entities/usuario.entity';
 import { ApiKeyGuard } from 'src/auth/api-key.middleware';
+import { Request } from 'express';
 
 @Controller('usuarios')
 @UseGuards(ApiKeyGuard)
@@ -49,10 +50,11 @@ export class UsuariosController {
   async findAllOperators(): Promise<Usuario[]> {
     return this.usuariosService.findAllOperators();
   }
+
   @Post('login')
-  async loginUser(@Body() loginData: { credentials: string; password: string }): Promise<any> {
-    const { credentials, password } = loginData;    
-    return this.usuariosService.loginUser(credentials, password);
+  async loginUser(@Req() req: Request, @Body() loginData: { credentials: string; password: string }): Promise<any> {
+    const { credentials, password } = loginData;
+    return this.usuariosService.loginUser(req, credentials, password);
   }
 
   @Post('createMultiple')

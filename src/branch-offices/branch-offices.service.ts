@@ -377,7 +377,6 @@ export class BranchOfficesService {
       }
 
       let stationary_tanks: any;
-      console.log('branchOfficeData.stationary_tanks', branchOfficeData.stationary_tanks);
       
       if (Array.isArray(branchOfficeData.stationary_tanks) && branchOfficeData.stationary_tanks.length === 0) {
         // Eliminar las relaciones en la tabla de unión
@@ -474,9 +473,7 @@ export class BranchOfficesService {
         ]
       });
 
-      console.log('Establecimiento encontrado::', existingBranchOffice);
-
-
+      
       if (!existingBranchOffice) {
         return ResponseUtil.error(404, 'Sucursal no encontrada');
       }
@@ -490,6 +487,7 @@ export class BranchOfficesService {
 
       existingBranchOffice.state = 'INACTIVO';
       const updatedBranchOffice = await this.branchOfficeRepository.save(existingBranchOffice);
+      
 
       if (updatedBranchOffice) {
 
@@ -499,9 +497,13 @@ export class BranchOfficesService {
 
         const promises = existingBranchOffice.stationary_tanks.map((stationary_tank, i) =>
           this.StationaryTankService.update(stationary_tank.id, data).then((response) => {
-            console.log(`Tanque estacionario ${stationary_tank.serial} actualizado`);
           })
         );
+
+        console.log('===================== Establecimiento Desactivado ============================');
+        console.log(updatedBranchOffice.name);
+        console.log(updatedBranchOffice.branch_office_code);
+        console.log('===============================================================================');
 
         return ResponseUtil.success(
           200,
@@ -645,7 +647,6 @@ export class BranchOfficesService {
   }
 
   async updateStatus(id, branchOfficeData) {
-    console.log('branchOfficeData', branchOfficeData);
     try {
       const existingBranchOffice = await this.branchOfficeRepository.findOne({
         where: [
@@ -713,7 +714,6 @@ export class BranchOfficesService {
       
       for (let i = 0; i < data.length; i += chunkSize) {
         const chunk = data.slice(i, i + chunkSize);
-        console.log('chunk', chunk);
         const promises = chunk.map((item: any) => this.create(item));        
         const responses = await Promise.all(promises);
 
