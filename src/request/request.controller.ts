@@ -36,8 +36,13 @@ export class RequestController {
   /////////////////////////////////////////////////////////////////////////////////////////////////
 
   @Get('getByPlate/:id')
-  async findRequestByPlate(@Param('id') id: string): Promise<any> {
+  async findRequestByPlate(@Param('id') id: any): Promise<any> {
     return this.requestService.findRequestByPlate(id);
+  }
+
+  @Post('findRequestByQuery')
+  async findRequestByQuery(@Body() query: any): Promise<any> {
+    return this.requestService.findRequestByQuery(query);
   }
   
 }

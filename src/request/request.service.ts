@@ -277,6 +277,82 @@ export class RequestService {
     }
   }
 
+  async findRequestByQuery(query: any): Promise<any> {
+    try {
+      let propane_truck_plate: any[] = [];
+      let requestByDate: any;
+      let requestByPropaneTruck: any;
+
+      if (query.propane_truck) {
+        const propaneTruckData = await this.propaneTruckRepository
+          .createQueryBuilder('propane_truck')
+          .where('propane_truck.plate LIKE :plate', { plate: `%${query.propane_truck}%` })
+          .getMany();
+
+        for (let i = 0; i < propaneTruckData.length; i++) {
+          propane_truck_plate.push(propaneTruckData[i].plate);
+        }
+      }
+
+      if (query.date && query.date2) {
+        const fechaInicial = query.date;
+        const fechaFinal = moment(query.date2).add(1, 'days').format('YYYY-MM-DD');
+
+        console.log('Fecha Inicial:', fechaInicial);
+        console.log('Fecha Final:', fechaFinal);
+
+        requestByDate = await this.requestRepository
+          .createQueryBuilder('request')
+          .innerJoinAndSelect('request.propane_truck', 'propane_truck')
+          .innerJoinAndSelect('request.order', 'order')
+          .innerJoinAndSelect('request.operator', 'operator')
+          .innerJoinAndSelect('request.branch_office', 'branch_office')
+          .innerJoinAndSelect('branch_office.stationary_tanks', 'stationary_tanks')
+          .where("JSON_EXTRACT(request.data_series, '$.fechaInicial') >= :fechaInicial", { fechaInicial })
+          .andWhere("JSON_EXTRACT(request.data_series, '$.fechaInicial') < :fechaFinal", { fechaFinal })
+          .getMany();
+
+        console.log('Request By Date:', requestByDate.length);
+      } else {
+        const fechaInicial = query.date;
+
+        requestByDate = await this.requestRepository
+          .createQueryBuilder('request')
+          .innerJoinAndSelect('request.propane_truck', 'propane_truck')
+          .innerJoinAndSelect('request.order', 'order')
+          .innerJoinAndSelect('request.operator', 'operator')
+          .innerJoinAndSelect('request.branch_office', 'branch_office')
+          .innerJoinAndSelect('branch_office.stationary_tanks', 'stationary_tanks')
+          .where("JSON_EXTRACT(request.data_series, '$.fechaInicial') LIKE :date", { date: `%${fechaInicial}%` })
+          .getMany();
+      }
+
+      if (propane_truck_plate.length != 0) {
+        requestByPropaneTruck = await this.requestRepository
+          .createQueryBuilder('request')
+          .innerJoinAndSelect('request.propane_truck', 'propane_truck')
+          .innerJoinAndSelect('request.order', 'order')
+          .innerJoinAndSelect('request.operator', 'operator')
+          .innerJoinAndSelect('request.branch_office', 'branch_office')
+          .innerJoinAndSelect('branch_office.stationary_tanks', 'stationary_tanks')
+          .where('request.plate IN (:...propane_truck_plate)', { propane_truck_plate })
+          .getMany();
+      }
+
+      // Combinar los resultados por id
+      const requestByDateIds = new Set(requestByDate.map(request => request.id));
+      const combinedRequests = requestByPropaneTruck.filter(request => requestByDateIds.has(request.id));
+
+      if (combinedRequests.length < 1) {
+        return ResponseUtil.error(400, 'No se han encontrado Servicios');
+      }
+
+      return ResponseUtil.success(200, `${combinedRequests.length} Servicios encontrados`, combinedRequests);
+    } catch (error) {
+      return ResponseUtil.error(500, 'Error al obtener los Servicios');
+    }
+  }
+
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
